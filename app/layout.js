@@ -1,10 +1,7 @@
 'use client';
 
 import './globals.css';
-import { Inter } from 'next/font/google';
 import { useEffect } from 'react';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({ children }) {
   useEffect(() => {
@@ -57,6 +54,9 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#1e40af" />
         <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
         
         <title>Checkinly - Gestion d'inventaires locatifs</title>
         <meta name="description" content="Application PWA pour gérer vos inventaires de locations courte durée avec Stripe, QR codes et automatisation complète." />
@@ -90,7 +90,7 @@ export default function RootLayout({ children }) {
           }`}
         </script>
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className="font-sans antialiased" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
         {children}
       </body>
     </html>
