@@ -1,10 +1,10 @@
 'use client';
 
-import { 
-  Home, 
-  MapPin, 
-  Users, 
-  Bed, 
+import Image from 'next/image';
+import {
+  MapPin,
+  Users,
+  Bed,
   Bath,
   Settings,
   Eye,
@@ -12,11 +12,21 @@ import {
   Edit,
   MoreVertical,
   Star,
-  TrendingUp
+  TrendingUp,
+  Trash2,
+  Link2,
+  ImageIcon
 } from 'lucide-react';
 import { useState } from 'react';
 
-export default function PropertyCard({ property, onEdit, onView, onCalendar, onSettings }) {
+export default function PropertyCard({
+  property,
+  onEdit,
+  onView,
+  onCalendar,
+  onSettings,
+  onDelete
+}) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const getStatusColor = (status) => {
@@ -63,7 +73,7 @@ export default function PropertyCard({ property, onEdit, onView, onCalendar, onS
             <span className="truncate">{property.address}</span>
           </div>
         </div>
-        
+
         {/* Dropdown Menu */}
         <div className="relative">
           <button
@@ -120,11 +130,36 @@ export default function PropertyCard({ property, onEdit, onView, onCalendar, onS
                   <Settings className="h-4 w-4 mr-2" />
                   Paramètres
                 </button>
+                {onDelete && (
+                  <button
+                    onClick={() => {
+                      onDelete(property);
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-danger-600 hover:bg-danger-50 flex items-center"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
       </div>
+
+      {property.profilePhoto && (
+        <div className="mb-4 overflow-hidden rounded-lg h-40 bg-gray-100 relative">
+          <Image
+            src={property.profilePhoto}
+            alt={`Photo de ${property.name}`}
+            fill
+            className="object-cover"
+            sizes="(min-width: 1280px) 320px, (min-width: 1024px) 280px, (min-width: 768px) 45vw, 90vw"
+            unoptimized
+          />
+        </div>
+      )}
 
       {/* Property Details */}
       <div className="grid grid-cols-3 gap-4 mb-4">
@@ -190,6 +225,60 @@ export default function PropertyCard({ property, onEdit, onView, onCalendar, onS
           Planning
         </button>
       </div>
+
+      {(property.airbnbUrl || property.bookingUrl) && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center">
+            <Link2 className="h-4 w-4 mr-2" />
+            Référencement
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {property.airbnbUrl && (
+              <a
+                href={property.airbnbUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-sm rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+              >
+                Airbnb
+              </a>
+            )}
+            {property.bookingUrl && (
+              <a
+                href={property.bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-sm rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+              >
+                Booking
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {property.descriptionPhotos?.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center">
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Photos descriptives
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {property.descriptionPhotos.map((photo, index) => (
+              <div key={photo} className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+                <Image
+                  src={photo}
+                  alt={`Photo ${index + 1} de ${property.name}`}
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                  unoptimized
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Description */}
       {property.description && (

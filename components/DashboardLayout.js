@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Home, 
-  FileText, 
-  Users, 
-  CreditCard, 
+import {
+  Home,
+  FileText,
+  Users,
+  CreditCard,
   Calendar,
   Settings,
   LogOut,
@@ -17,7 +17,8 @@ import {
   Bell,
   User,
   ChevronDown,
-  BookOpen
+  BookOpen,
+  Building2
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -75,6 +76,7 @@ export default function DashboardLayout({ children }) {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
     { name: 'Inventaires', href: '/inventory', icon: FileText },
     { name: 'Guests', href: '/guests', icon: Users },
     { name: 'Cautions', href: '/deposits', icon: CreditCard },
@@ -85,6 +87,7 @@ export default function DashboardLayout({ children }) {
 
   const mobileNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
     { name: 'Inventaires', href: '/inventory', icon: FileText },
     { name: 'Guests', href: '/guests', icon: Users },
     { name: 'Cautions', href: '/deposits', icon: CreditCard },
