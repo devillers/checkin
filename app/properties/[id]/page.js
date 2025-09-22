@@ -93,7 +93,7 @@ export default function PropertyDetailsPage() {
 
   const handleOpenCalendar = () => {
     if (property?.id) {
-      router.push(`/calendar?property=${property.id}`);
+      router.push(`/dashboard/calendrier?property=${property.id}`);
     }
   };
 
