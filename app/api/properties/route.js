@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { validateAndNormalizePropertyPayload } from './utils';
 
 export async function GET(request) {
   try {
@@ -30,14 +31,10 @@ export async function POST(request) {
     const data = await request.json();
     const { db } = await connectDB();
 
-    const { name, address, description, type, maxGuests, bedrooms, bathrooms, amenities } = data;
+    const { errorResponse, normalizedData } = validateAndNormalizePropertyPayload(data);
 
-    // Validate required fields
-    if (!name || !address || !type || !maxGuests) {
-      return NextResponse.json(
-        { message: 'Nom, adresse, type et nombre max d\'invités sont requis' },
-        { status: 400 }
-      );
+    if (errorResponse) {
+      return errorResponse;
     }
 
     const propertyId = uuidv4();
@@ -45,14 +42,7 @@ export async function POST(request) {
     const property = {
       id: propertyId,
       userId: user.id,
-      name: name.trim(),
-      address: address.trim(),
-      description: description?.trim() || '',
-      type, // apartment, house, studio, etc.
-      maxGuests: parseInt(maxGuests),
-      bedrooms: parseInt(bedrooms) || 1,
-      bathrooms: parseInt(bathrooms) || 1,
-      amenities: amenities || [],
+      ...normalizedData,
       status: 'active',
       settings: {
         autoCheckIn: true,
