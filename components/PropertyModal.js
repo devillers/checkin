@@ -1,19 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Home, MapPin, Users, Bed, Bath, Wifi, Car, Tv, Waves } from 'lucide-react';
+import {
+  X,
+  Home,
+  MapPin,
+  Users,
+  Bed,
+  Bath,
+  Wifi,
+  Car,
+  Tv,
+  Waves,
+  Link2,
+  ImageIcon
+} from 'lucide-react';
+
+const DEFAULT_FORM_DATA = {
+  name: '',
+  address: '',
+  description: '',
+  type: 'apartment',
+  maxGuests: 2,
+  bedrooms: 1,
+  bathrooms: 1,
+  amenities: [],
+  airbnbUrl: '',
+  bookingUrl: '',
+  profilePhoto: '',
+  descriptionPhotos: []
+};
 
 export default function PropertyModal({ property, onClose, onSave }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    description: '',
-    type: 'apartment',
-    maxGuests: 2,
-    bedrooms: 1,
-    bathrooms: 1,
-    amenities: []
-  });
+  const [formData, setFormData] = useState(() => ({ ...DEFAULT_FORM_DATA }));
+  const [descriptionPhotosInput, setDescriptionPhotosInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -40,15 +60,24 @@ export default function PropertyModal({ property, onClose, onSave }) {
   useEffect(() => {
     if (property) {
       setFormData({
+        ...DEFAULT_FORM_DATA,
         name: property.name || '',
         address: property.address || '',
         description: property.description || '',
         type: property.type || 'apartment',
         maxGuests: property.maxGuests || 2,
-        bedrooms: property.bedrooms || 1,
+        bedrooms: property.bedrooms ?? 1,
         bathrooms: property.bathrooms || 1,
-        amenities: property.amenities || []
+        amenities: property.amenities || [],
+        airbnbUrl: property.airbnbUrl || '',
+        bookingUrl: property.bookingUrl || '',
+        profilePhoto: property.profilePhoto || '',
+        descriptionPhotos: property.descriptionPhotos || []
       });
+      setDescriptionPhotosInput((property.descriptionPhotos || []).join('\n'));
+    } else {
+      setFormData({ ...DEFAULT_FORM_DATA });
+      setDescriptionPhotosInput('');
     }
   }, [property]);
 
@@ -58,11 +87,24 @@ export default function PropertyModal({ property, onClose, onSave }) {
       ...prev,
       [name]: type === 'number' ? parseInt(value) : value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleDescriptionPhotosChange = (e) => {
+    const { value } = e.target;
+    setDescriptionPhotosInput(value);
+    const photos = value
+      .split(/\n|,/)
+      .map((photo) => photo.trim())
+      .filter(Boolean);
+    setFormData((prev) => ({
+      ...prev,
+      descriptionPhotos: photos
+    }));
   };
 
   const handleAmenityToggle = (amenityId) => {
@@ -92,6 +134,33 @@ export default function PropertyModal({ property, onClose, onSave }) {
     if (formData.bathrooms < 1) {
       newErrors.bathrooms = 'Au moins 1 salle de bain';
     }
+
+    const validateUrl = (value, field) => {
+      if (!value) return;
+      try {
+        const url = new URL(value);
+        if (!url.protocol.startsWith('http')) {
+          throw new Error('Invalid protocol');
+        }
+      } catch (error) {
+        newErrors[field] = 'URL invalide';
+      }
+    };
+
+    validateUrl(formData.airbnbUrl, 'airbnbUrl');
+    validateUrl(formData.bookingUrl, 'bookingUrl');
+    validateUrl(formData.profilePhoto, 'profilePhoto');
+
+    formData.descriptionPhotos.forEach((photo, index) => {
+      try {
+        const url = new URL(photo);
+        if (!url.protocol.startsWith('http')) {
+          throw new Error('Invalid protocol');
+        }
+      } catch (error) {
+        newErrors.descriptionPhotos = 'Une ou plusieurs URLs de photos sont invalides';
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -160,7 +229,7 @@ export default function PropertyModal({ property, onClose, onSave }) {
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Informations générales</h3>
-            
+
             <div>
               <label htmlFor="name" className="form-label">
                 <Home className="h-4 w-4 inline mr-2" />
@@ -237,6 +306,96 @@ export default function PropertyModal({ property, onClose, onSave }) {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Online Presence */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Présence en ligne</h3>
+
+            <div>
+              <label htmlFor="airbnbUrl" className="form-label">
+                <Link2 className="h-4 w-4 inline mr-2" />
+                Lien Airbnb
+              </label>
+              <input
+                id="airbnbUrl"
+                name="airbnbUrl"
+                type="url"
+                className={`form-input ${errors.airbnbUrl ? 'border-danger-500' : ''}`}
+                placeholder="https://www.airbnb.fr/..."
+                value={formData.airbnbUrl}
+                onChange={handleChange}
+                disabled={isLoading}
+              />
+              {errors.airbnbUrl && (
+                <p className="mt-1 text-sm text-danger-600">{errors.airbnbUrl}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="bookingUrl" className="form-label">
+                <Link2 className="h-4 w-4 inline mr-2" />
+                Lien Booking
+              </label>
+              <input
+                id="bookingUrl"
+                name="bookingUrl"
+                type="url"
+                className={`form-input ${errors.bookingUrl ? 'border-danger-500' : ''}`}
+                placeholder="https://www.booking.com/..."
+                value={formData.bookingUrl}
+                onChange={handleChange}
+                disabled={isLoading}
+              />
+              {errors.bookingUrl && (
+                <p className="mt-1 text-sm text-danger-600">{errors.bookingUrl}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Photos */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Photos</h3>
+
+            <div>
+              <label htmlFor="profilePhoto" className="form-label">
+                <ImageIcon className="h-4 w-4 inline mr-2" />
+                Photo de profil
+              </label>
+              <input
+                id="profilePhoto"
+                name="profilePhoto"
+                type="url"
+                className={`form-input ${errors.profilePhoto ? 'border-danger-500' : ''}`}
+                placeholder="URL de la photo principale"
+                value={formData.profilePhoto}
+                onChange={handleChange}
+                disabled={isLoading}
+              />
+              {errors.profilePhoto && (
+                <p className="mt-1 text-sm text-danger-600">{errors.profilePhoto}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="descriptionPhotos" className="form-label">
+                <ImageIcon className="h-4 w-4 inline mr-2" />
+                Photos de description
+              </label>
+              <textarea
+                id="descriptionPhotos"
+                name="descriptionPhotos"
+                rows={3}
+                className={`form-input ${errors.descriptionPhotos ? 'border-danger-500' : ''}`}
+                placeholder="Une URL par ligne (chambre, salle de bain, etc.)"
+                value={descriptionPhotosInput}
+                onChange={handleDescriptionPhotosChange}
+                disabled={isLoading}
+              />
+              {errors.descriptionPhotos && (
+                <p className="mt-1 text-sm text-danger-600">{errors.descriptionPhotos}</p>
+              )}
             </div>
           </div>
 
