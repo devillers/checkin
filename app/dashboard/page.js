@@ -66,7 +66,7 @@ export default function DashboardPage() {
     }
 
     const token =
-      typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
 
     if (!token) {
       setIsLoading(false);
