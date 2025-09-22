@@ -18,7 +18,8 @@ import {
   User,
   ChevronDown,
   BookOpen,
-  Building2
+  Building2,
+  ShieldAlert
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -74,7 +75,7 @@ export default function DashboardLayout({ children }) {
     router.push('/auth/login');
   };
 
-  const navigation = [
+  const baseNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
     { name: 'Inventaires', href: '/inventory', icon: FileText },
@@ -85,7 +86,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Paramètres', href: '/settings', icon: Settings },
   ];
 
-  const mobileNavigation = [
+  const baseMobileNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
     { name: 'Inventaires', href: '/inventory', icon: FileText },
@@ -94,6 +95,22 @@ export default function DashboardLayout({ children }) {
     { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
     { name: "Guide d'arrivée", href: '/guidebook', icon: BookOpen },
   ];
+
+  const superAdminEntry = {
+    name: 'Super admin',
+    href: '/dashboard/super-admin',
+    icon: ShieldAlert
+  };
+
+  const navigation =
+    user?.role === 'super_admin'
+      ? [baseNavigation[0], superAdminEntry, ...baseNavigation.slice(1)]
+      : baseNavigation;
+
+  const mobileNavigation =
+    user?.role === 'super_admin'
+      ? [baseMobileNavigation[0], superAdminEntry, ...baseMobileNavigation.slice(1)]
+      : baseMobileNavigation;
 
   return (
     <div className="min-h-screen bg-gray-50">
