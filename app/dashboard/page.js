@@ -46,19 +46,35 @@ export default function DashboardPage() {
       setShowWelcome(true);
     }
 
-    fetchDashboardData();
-  }, [searchParams]);
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
-  const fetchDashboardData = async () => {
+    if (!token) {
+      setIsLoading(false);
+      router.replace('/login');
+      return;
+    }
+
+    fetchDashboardData(token);
+  }, [router, searchParams]);
+
+  const fetchDashboardData = async (token) => {
     try {
       setIsLoading(true);
 
       // Fetch all dashboard data in parallel
+      const fetchWithAuth = (url) =>
+        fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
       const [statsRes, activitiesRes, checkinsRes, tasksRes] = await Promise.all([
-        fetch('/api/dashboard/stats'),
-        fetch('/api/dashboard/activities'),
-        fetch('/api/dashboard/checkins'),
-        fetch('/api/dashboard/tasks')
+        fetchWithAuth('/api/dashboard/stats'),
+        fetchWithAuth('/api/dashboard/activities'),
+        fetchWithAuth('/api/dashboard/checkins'),
+        fetchWithAuth('/api/dashboard/tasks')
       ]);
 
       if (statsRes.ok) {
