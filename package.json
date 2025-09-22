@@ -1,0 +1,53 @@
+{
+  "name": "checkinly",
+  "version": "1.0.0",
+  "description": "PWA de gestion d'inventaires locatifs",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@next/swc-wasm-nodejs": "13.5.1",
+    "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.446.0",
+    "mongodb": "^6.20.0",
+    "next": "13.5.1",
+    "nodemailer": "^7.0.6",
+    "qrcode": "^1.5.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-hook-form": "^7.63.0",
+    "react-signature-canvas": "^1.0.7",
+    "stripe": "^14.25.0",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^9.0.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "20.6.2",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "18.2.22",
+    "@types/react-dom": "18.2.7",
+    "@types/react-signature-canvas": "^1.0.5",
+    "@types/uuid": "^9.0.7",
+    "autoprefixer": "10.4.15",
+    "eslint": "8.49.0",
+    "eslint-config-next": "13.5.1",
+    "postcss": "8.4.30",
+    "tailwindcss": "3.3.3",
+    "typescript": "5.2.2"
+  }
+}

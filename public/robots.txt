@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /features
+Allow: /pricing
+Allow: /contact
+Allow: /legal/privacy
+Allow: /legal/terms
+
+Disallow: /dashboard
+Disallow: /inventory
+Disallow: /guests
+Disallow: /deposits
+Disallow: /api/
+Disallow: /admin
+Disallow: /auth
+
+Sitemap: https://checkinly.com/sitemap.xml

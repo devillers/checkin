@@ -1,0 +1,43 @@
+{
+  "name": "Checkinly - Gestion d'inventaires locatifs",
+  "short_name": "Checkinly",
+  "description": "Application PWA pour gérer vos inventaires de locations courte durée",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "fr-FR",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Accéder au tableau de bord",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/dashboard.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Nouvel inventaire",
+      "short_name": "Inventaire",
+      "description": "Créer un nouvel inventaire",
+      "url": "/inventory/new",
+      "icons": [{ "src": "/icons/inventory.png", "sizes": "96x96" }]
+    }
+  ]
+}
