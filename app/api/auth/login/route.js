@@ -9,7 +9,7 @@ const users = [
     firstName: 'Démo',
     lastName: 'Utilisateur',
     email: 'demo@checkinly.com',
-    password: '$2a$10$N9qo8uLOickgx2ZMRZoMye.j8E5o1FO8wX1rP6ZBOOtIkENPrWHDq', // demo123
+    password: '$2a$10$jLSs2TRYBiH1rn42gXs7ie.rtt94Dszb.w4sF3NvmK/1suZRN.xdG', // demo123
     role: 'owner',
     createdAt: new Date().toISOString()
   }
