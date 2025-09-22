@@ -43,10 +43,23 @@ export default function DashboardLayout({ children }) {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications');
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        setNotifications([]);
+        return;
+      }
+
+      const response = await fetch('/api/notifications', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.filter(notif => !notif.read));
+      } else if (response.status === 401) {
+        console.warn('Unauthorized when fetching notifications');
+        setNotifications([]);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
