@@ -129,7 +129,7 @@ export default function HomePage() {
             Commencer gratuitement
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
-          <Link href="#demo" className="btn-secondary text-lg px-8 py-4">
+          <Link href="/demo" className="btn-secondary text-lg px-8 py-4">
             Voir la démo
           </Link>
         </div>
