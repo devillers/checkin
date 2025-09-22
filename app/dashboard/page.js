@@ -135,7 +135,7 @@ export default function DashboardPage() {
         router.push('/deposits');
         break;
       case 'calendar':
-        router.push('/calendar');
+        router.push('/dashboard/calendrier');
         break;
       default:
         break;

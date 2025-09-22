@@ -202,7 +202,7 @@ export default function PropertiesPage() {
                 property={property}
                 onEdit={handleEditProperty}
                 onView={(property) => router.push(`/properties/${property.id}`)}
-                onCalendar={(property) => router.push(`/calendar?property=${property.id}`)}
+                onCalendar={(property) => router.push(`/dashboard/calendrier?property=${property.id}`)}
                 onSettings={(property) => router.push(`/properties/${property.id}/settings`)}
               />
             ))}
