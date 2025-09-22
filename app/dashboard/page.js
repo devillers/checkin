@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  Home, 
-  FileText, 
-  Users, 
+import {
+  Home,
+  FileText,
+  Users,
   CreditCard, 
   Calendar,
   TrendingUp,
@@ -21,6 +21,25 @@ import DashboardLayout from '@/components/DashboardLayout';
 import WelcomeModal from '@/components/WelcomeModal';
 import StatsCard from '@/components/StatsCard';
 import RecentActivity from '@/components/RecentActivity';
+import { cn } from '@/lib/utils';
+
+const QUICK_ACTION_COLOR_CLASSES = {
+  primary: {
+    button: 'border-primary-200 hover:border-primary-400 hover:bg-primary-50',
+    icon: 'text-primary-600'
+  },
+  success: {
+    button: 'border-success-200 hover:border-success-400 hover:bg-success-50',
+    icon: 'text-success-600'
+  },
+  warning: {
+    button: 'border-warning-200 hover:border-warning-400 hover:bg-warning-50',
+    icon: 'text-warning-600'
+  }
+};
+
+const getQuickActionColorClasses = (color) =>
+  QUICK_ACTION_COLOR_CLASSES[color] ?? QUICK_ACTION_COLOR_CLASSES.primary;
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -216,17 +235,30 @@ export default function DashboardPage() {
             Actions rapides
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action) => (
-              <button
-                key={action.id}
-                onClick={() => handleQuickAction(action.id)}
-                className={`p-4 rounded-lg border-2 border-dashed border-${action.color}-200 hover:border-${action.color}-400 hover:bg-${action.color}-50 transition-all text-left group`}
-              >
-                <action.icon className={`h-6 w-6 text-${action.color}-600 mb-2 group-hover:scale-110 transition-transform`} />
-                <h3 className="font-medium text-gray-900">{action.title}</h3>
-                <p className="text-sm text-gray-600">{action.description}</p>
-              </button>
-            ))}
+            {quickActions.map((action) => {
+              const { button: buttonColorClasses, icon: iconColorClass } =
+                getQuickActionColorClasses(action.color);
+
+              return (
+                <button
+                  key={action.id}
+                  onClick={() => handleQuickAction(action.id)}
+                  className={cn(
+                    'p-4 rounded-lg border-2 border-dashed transition-all text-left group',
+                    buttonColorClasses
+                  )}
+                >
+                  <action.icon
+                    className={cn(
+                      'h-6 w-6 mb-2 group-hover:scale-110 transition-transform',
+                      iconColorClass
+                    )}
+                  />
+                  <h3 className="font-medium text-gray-900">{action.title}</h3>
+                  <p className="text-sm text-gray-600">{action.description}</p>
+                </button>
+              );
+            })}
           </div>
         </div>
 
