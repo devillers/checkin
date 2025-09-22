@@ -78,7 +78,7 @@ export default function InventoryDetailsPage() {
     const token = localStorage.getItem('auth-token');
 
     if (!token) {
-      router.replace('/login');
+      router.replace('/auth/login');
       return;
     }
 
@@ -98,7 +98,7 @@ export default function InventoryDetailsPage() {
         });
 
         if (response.status === 401) {
-          router.replace('/login');
+          router.replace('/auth/login');
           return;
         }
 

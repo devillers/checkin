@@ -41,7 +41,7 @@ export default function PropertyDetailsPage() {
       const token = localStorage.getItem('auth-token');
 
       if (!token) {
-        router.replace('/login');
+        router.replace('/auth/login');
         return;
       }
 
@@ -56,7 +56,7 @@ export default function PropertyDetailsPage() {
         });
 
         if (response.status === 401) {
-          router.replace('/login');
+          router.replace('/auth/login');
           return;
         }
 

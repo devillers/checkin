@@ -70,7 +70,7 @@ export default function DashboardPage() {
 
     if (!token) {
       setIsLoading(false);
-      router.replace('/login');
+      router.replace('/auth/login');
       return;
     }
 

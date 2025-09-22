@@ -69,7 +69,7 @@ export default function EditInventoryPage() {
     const token = localStorage.getItem('auth-token');
 
     if (!token) {
-      router.replace('/login');
+      router.replace('/auth/login');
       return;
     }
 
@@ -98,7 +98,7 @@ export default function EditInventoryPage() {
         ]);
 
         if (inventoryRes.status === 401 || propertiesRes.status === 401 || guestsRes.status === 401) {
-          router.replace('/login');
+          router.replace('/auth/login');
           return;
         }
 
@@ -273,7 +273,7 @@ export default function EditInventoryPage() {
       const token = localStorage.getItem('auth-token');
 
       if (!token) {
-        router.replace('/login');
+        router.replace('/auth/login');
         return;
       }
 
@@ -290,7 +290,7 @@ export default function EditInventoryPage() {
       });
 
       if (response.status === 401) {
-        router.replace('/login');
+        router.replace('/auth/login');
         return;
       }
 

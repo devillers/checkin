@@ -33,7 +33,7 @@ export default function PropertySettingsPage() {
     const storedToken = localStorage.getItem('auth-token');
 
     if (!storedToken) {
-      router.replace('/login');
+      router.replace('/auth/login');
       return;
     }
 
@@ -57,7 +57,7 @@ export default function PropertySettingsPage() {
         });
 
         if (response.status === 401) {
-          router.replace('/login');
+          router.replace('/auth/login');
           return;
         }
 
@@ -124,7 +124,7 @@ export default function PropertySettingsPage() {
     event.preventDefault();
 
     if (!propertyId || !token) {
-      router.replace('/login');
+      router.replace('/auth/login');
       return;
     }
 
@@ -148,7 +148,7 @@ export default function PropertySettingsPage() {
       });
 
       if (response.status === 401) {
-        router.replace('/login');
+        router.replace('/auth/login');
         return;
       }
 
