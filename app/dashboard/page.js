@@ -129,7 +129,7 @@ export default function DashboardPage() {
         router.push('/inventory/new');
         break;
       case 'new-guest':
-        router.push('/guests/new');
+        router.push('/dashboard/guests');
         break;
       case 'view-deposits':
         router.push('/deposits');
