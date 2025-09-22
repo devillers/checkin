@@ -23,6 +23,7 @@ export default function InventoryPage() {
   const [inventories, setInventories] = useState([]);
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [duplicateError, setDuplicateError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [propertyFilter, setPropertyFilter] = useState('all');
@@ -95,6 +96,7 @@ export default function InventoryPage() {
   const handleDuplicateInventory = async (inventory) => {
     try {
       const token = localStorage.getItem('auth-token');
+      setDuplicateError(null);
       const response = await fetch(`/api/inventories/${inventory.id}/duplicate`, {
         method: 'POST',
         headers: {
@@ -103,10 +105,23 @@ export default function InventoryPage() {
       });
 
       if (response.ok) {
+        setDuplicateError(null);
         await fetchData();
+      } else {
+        let errorMessage = "Erreur lors de la duplication de l'inventaire";
+        try {
+          const errorData = await response.json();
+          if (errorData?.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (parseError) {
+          console.error('Error parsing duplicate inventory error response:', parseError);
+        }
+        setDuplicateError(errorMessage);
       }
     } catch (error) {
       console.error('Error duplicating inventory:', error);
+      setDuplicateError("Impossible de dupliquer l'inventaire. Veuillez réessayer.");
     }
   };
 
@@ -141,6 +156,12 @@ export default function InventoryPage() {
             Nouvel inventaire
           </button>
         </div>
+
+        {duplicateError && (
+          <div className="rounded-lg border border-danger-200 bg-danger-50 text-danger-700 p-4">
+            {duplicateError}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
