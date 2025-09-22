@@ -88,10 +88,10 @@ export default function HomePage() {
               <span className="text-2xl font-bold gradient-text">Checkinly</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <Link href="#features" className="text-gray-600 hover:text-primary-600 transition-colors">
+              <Link href="/fonctionnalites" className="text-gray-600 hover:text-primary-600 transition-colors">
                 Fonctionnalités
               </Link>
-              <Link href="#pricing" className="text-gray-600 hover:text-primary-600 transition-colors">
+              <Link href="/tarifs" className="text-gray-600 hover:text-primary-600 transition-colors">
                 Tarifs
               </Link>
               <Link href="#testimonials" className="text-gray-600 hover:text-primary-600 transition-colors">
@@ -336,8 +336,8 @@ export default function HomePage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Produit</h3>
               <ul className="space-y-2">
-                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors">Fonctionnalités</a></li>
-                <li><a href="#pricing" className="text-gray-400 hover:text-white transition-colors">Tarifs</a></li>
+                <li><a href="/fonctionnalites" className="text-gray-400 hover:text-white transition-colors">Fonctionnalités</a></li>
+                <li><a href="/tarifs" className="text-gray-400 hover:text-white transition-colors">Tarifs</a></li>
                 <li><a href="/demo" className="text-gray-400 hover:text-white transition-colors">Démo</a></li>
                 <li><a href="/api-docs" className="text-gray-400 hover:text-white transition-colors">API</a></li>
               </ul>
