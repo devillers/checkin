@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home, Plus, MapPin, Users, BarChart3, Trash2 } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
 import PropertyCard from '@/components/PropertyCard';
 import PropertyModal from '@/components/PropertyModal';
 
@@ -131,16 +130,14 @@ export default function DashboardPropertiesPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="loading-spinner" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="loading-spinner" />
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -259,6 +256,6 @@ export default function DashboardPropertiesPage() {
           />
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

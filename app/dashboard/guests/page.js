@@ -20,7 +20,6 @@ import {
   X,
 } from 'lucide-react';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -308,7 +307,7 @@ export default function DashboardGuestsPage() {
   const stayLabel = (guest) => `${formatDate(guest.stayStart)} → ${formatDate(guest.stayEnd)}`;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -753,6 +752,6 @@ export default function DashboardGuestsPage() {
           </div>
         </form>
       </ModalShell>
-    </DashboardLayout>
+    </>
   );
 }

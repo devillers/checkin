@@ -15,7 +15,6 @@ import {
   Mail,
 } from 'lucide-react';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -561,16 +560,14 @@ export default function DashboardCalendarPage() {
 
   if (isCheckingAuth) {
     return (
-      <DashboardLayout>
-        <div className="flex h-64 items-center justify-center">
-          <div className="loading-spinner" />
-        </div>
-      </DashboardLayout>
+      <div className="flex h-64 items-center justify-center">
+        <div className="loading-spinner" />
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -716,6 +713,6 @@ export default function DashboardCalendarPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
