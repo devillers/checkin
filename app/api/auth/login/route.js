@@ -31,7 +31,9 @@ export async function POST(request) {
       );
     }
 
-    if (!user.password) {
+    const passwordHash = user.passwordHash || user.password;
+
+    if (!passwordHash) {
       console.error('User record missing password hash for:', user.email);
       return NextResponse.json(
         { message: 'Impossible de se connecter pour le moment. Merci de contacter le support.' },
@@ -40,7 +42,7 @@ export async function POST(request) {
     }
 
     // Verify password using stored hash
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json(
         { message: 'Email ou mot de passe incorrect' },
