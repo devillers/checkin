@@ -19,7 +19,6 @@ import {
   Users
 } from 'lucide-react';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import StatsCard from '@/components/StatsCard';
 import { cn } from '@/lib/utils';
 
@@ -392,30 +391,25 @@ export default function SuperAdminDashboard() {
 
   if (!authState.checked) {
     return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div className="card animate-pulse h-40" />
-          <div className="card animate-pulse h-40" />
-        </div>
-      </DashboardLayout>
+      <div className="space-y-6">
+        <div className="card animate-pulse h-40" />
+        <div className="card animate-pulse h-40" />
+      </div>
     );
   }
 
   if (!authState.authorized) {
     return (
-      <DashboardLayout>
-        <div className="card">
-          <div className="p-6">
-            <p className="text-gray-600">Redirection en cours…</p>
-          </div>
+      <div className="card">
+        <div className="p-6">
+          <p className="text-gray-600">Redirection en cours…</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Pilotage global</h1>
@@ -774,6 +768,5 @@ export default function SuperAdminDashboard() {
           </div>
         </section>
       </div>
-    </DashboardLayout>
   );
 }

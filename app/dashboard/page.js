@@ -17,7 +17,6 @@ import {
   QrCode,
   Download
 } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
 import WelcomeModal from '@/components/WelcomeModal';
 import StatsCard from '@/components/StatsCard';
 import RecentActivity from '@/components/RecentActivity';
@@ -175,16 +174,14 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="loading-spinner"></div>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="loading-spinner"></div>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Welcome Message */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg text-white p-6">
@@ -357,6 +354,6 @@ export default function DashboardPage() {
       {showWelcome && (
         <WelcomeModal onClose={() => setShowWelcome(false)} />
       )}
-    </DashboardLayout>
+    </>
   );
 }
