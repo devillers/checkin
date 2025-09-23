@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import {
   X,
@@ -13,7 +14,10 @@ import {
   Tv,
   Waves,
   Link2,
-  ImageIcon
+  ImageIcon,
+  Upload,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 
 const DEFAULT_FORM_DATA = {
@@ -27,15 +31,59 @@ const DEFAULT_FORM_DATA = {
   amenities: [],
   airbnbUrl: '',
   bookingUrl: '',
-  profilePhoto: '',
+  profilePhoto: null,
   descriptionPhotos: []
+};
+
+const normalizePhotoValue = (photo) => {
+  if (!photo) {
+    return null;
+  }
+
+  if (typeof photo === 'string') {
+    return { url: photo, publicId: '' };
+  }
+
+  if (typeof photo === 'object') {
+    const url = typeof photo.url === 'string' ? photo.url : '';
+    if (!url) {
+      return null;
+    }
+
+    const normalized = {
+      url,
+      publicId: typeof photo.publicId === 'string' ? photo.publicId : ''
+    };
+
+    if (photo.thumbnailUrl && typeof photo.thumbnailUrl === 'string') {
+      normalized.thumbnailUrl = photo.thumbnailUrl;
+    }
+
+    return normalized;
+  }
+
+  return null;
+};
+
+const normalizePhotoArray = (photos) => {
+  if (!Array.isArray(photos)) {
+    return [];
+  }
+
+  return photos
+    .map((photo) => normalizePhotoValue(photo))
+    .filter((photo) => photo && photo.url);
 };
 
 export default function PropertyModal({ property, onClose, onSave }) {
   const [formData, setFormData] = useState(() => ({ ...DEFAULT_FORM_DATA }));
-  const [descriptionPhotosInput, setDescriptionPhotosInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [uploadErrors, setUploadErrors] = useState({ profilePhoto: '', descriptionPhotos: '' });
+  const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
+  const [isUploadingDescriptionPhotos, setIsUploadingDescriptionPhotos] = useState(false);
+  const [isRemovingProfilePhoto, setIsRemovingProfilePhoto] = useState(false);
+  const [removingPhotoIds, setRemovingPhotoIds] = useState({});
 
   const availableAmenities = [
     { id: 'wifi', name: 'WiFi', icon: Wifi },
@@ -71,14 +119,16 @@ export default function PropertyModal({ property, onClose, onSave }) {
         amenities: property.amenities || [],
         airbnbUrl: property.airbnbUrl || '',
         bookingUrl: property.bookingUrl || '',
-        profilePhoto: property.profilePhoto || '',
-        descriptionPhotos: property.descriptionPhotos || []
+        profilePhoto: normalizePhotoValue(property.profilePhoto),
+        descriptionPhotos: normalizePhotoArray(property.descriptionPhotos)
       });
-      setDescriptionPhotosInput((property.descriptionPhotos || []).join('\n'));
     } else {
       setFormData({ ...DEFAULT_FORM_DATA });
-      setDescriptionPhotosInput('');
     }
+
+    setUploadErrors({ profilePhoto: '', descriptionPhotos: '' });
+    setRemovingPhotoIds({});
+    setIsRemovingProfilePhoto(false);
   }, [property]);
 
   const handleChange = (e) => {
@@ -94,17 +144,188 @@ export default function PropertyModal({ property, onClose, onSave }) {
     }
   };
 
-  const handleDescriptionPhotosChange = (e) => {
-    const { value } = e.target;
-    setDescriptionPhotosInput(value);
-    const photos = value
-      .split(/\n|,/)
-      .map((photo) => photo.trim())
-      .filter(Boolean);
-    setFormData((prev) => ({
+  const uploadImages = async (files, folder) => {
+    const token = localStorage.getItem('auth-token');
+
+    if (!token) {
+      throw new Error('Authentification requise pour téléverser des images');
+    }
+
+    const uploads = [];
+
+    for (const file of files) {
+      const payload = new FormData();
+      payload.append('file', file);
+      payload.append('folder', folder);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: payload
+      });
+
+      let result = null;
+
+      try {
+        result = await response.json();
+      } catch (error) {
+        // ignore parsing error, will handle via response.ok
+      }
+
+      if (!response.ok || !result) {
+        const message = result?.message || 'Erreur lors du téléchargement de la photo';
+        throw new Error(message);
+      }
+
+      uploads.push(result);
+    }
+
+    return uploads;
+  };
+
+  const deleteImage = async (publicId) => {
+    if (!publicId) {
+      return;
+    }
+
+    const token = localStorage.getItem('auth-token');
+
+    if (!token) {
+      throw new Error('Authentification requise pour supprimer des images');
+    }
+
+    const response = await fetch('/api/upload', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ publicId })
+    });
+
+    let result = null;
+
+    try {
+      result = await response.json();
+    } catch (error) {
+      // ignore parse errors
+    }
+
+    if (!response.ok) {
+      const message = result?.message || "Erreur lors de la suppression de l'image";
+      throw new Error(message);
+    }
+  };
+
+  const handleProfilePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setUploadErrors((prev) => ({ ...prev, profilePhoto: '' }));
+    setIsUploadingProfilePhoto(true);
+
+    try {
+      const [upload] = await uploadImages([file], 'profile');
+      setFormData((prev) => ({
+        ...prev,
+        profilePhoto: upload
+      }));
+    } catch (error) {
+      setUploadErrors((prev) => ({ ...prev, profilePhoto: error.message }));
+    } finally {
+      setIsUploadingProfilePhoto(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDescriptionPhotosUpload = async (event) => {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+
+    if (!files.length) {
+      return;
+    }
+
+    setUploadErrors((prev) => ({ ...prev, descriptionPhotos: '' }));
+    setIsUploadingDescriptionPhotos(true);
+
+    try {
+      const uploads = await uploadImages(files, 'gallery');
+      setFormData((prev) => ({
+        ...prev,
+        descriptionPhotos: [...prev.descriptionPhotos, ...uploads]
+      }));
+    } catch (error) {
+      setUploadErrors((prev) => ({ ...prev, descriptionPhotos: error.message }));
+    } finally {
+      setIsUploadingDescriptionPhotos(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveProfilePhoto = async () => {
+    if (!formData.profilePhoto) {
+      return;
+    }
+
+    setUploadErrors((prev) => ({ ...prev, profilePhoto: '' }));
+    setIsRemovingProfilePhoto(true);
+
+    try {
+      if (formData.profilePhoto.publicId) {
+        await deleteImage(formData.profilePhoto.publicId);
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        profilePhoto: null
+      }));
+    } catch (error) {
+      setUploadErrors((prev) => ({ ...prev, profilePhoto: error.message }));
+    } finally {
+      setIsRemovingProfilePhoto(false);
+    }
+  };
+
+  const handleRemoveDescriptionPhoto = async (photo, index) => {
+    if (!photo) {
+      return;
+    }
+
+    const photoUrl = photo.url || '';
+    const photoKey = photo.publicId || `${photoUrl}-${index}`;
+
+    setRemovingPhotoIds((prev) => ({
       ...prev,
-      descriptionPhotos: photos
+      [photoKey]: true
     }));
+    setUploadErrors((prev) => ({ ...prev, descriptionPhotos: '' }));
+
+    try {
+      if (photo.publicId) {
+        await deleteImage(photo.publicId);
+      }
+
+      setFormData((prev) => {
+        const updatedPhotos = prev.descriptionPhotos.filter((_, idx) => idx !== index);
+        return {
+          ...prev,
+          descriptionPhotos: updatedPhotos
+        };
+      });
+    } catch (error) {
+      setUploadErrors((prev) => ({ ...prev, descriptionPhotos: error.message }));
+    } finally {
+      setRemovingPhotoIds((prev) => {
+        const updated = { ...prev };
+        delete updated[photoKey];
+        return updated;
+      });
+    }
   };
 
   const handleAmenityToggle = (amenityId) => {
@@ -149,11 +370,20 @@ export default function PropertyModal({ property, onClose, onSave }) {
 
     validateUrl(formData.airbnbUrl, 'airbnbUrl');
     validateUrl(formData.bookingUrl, 'bookingUrl');
-    validateUrl(formData.profilePhoto, 'profilePhoto');
 
-    formData.descriptionPhotos.forEach((photo, index) => {
+    if (formData.profilePhoto?.url) {
+      validateUrl(formData.profilePhoto.url, 'profilePhoto');
+    }
+
+    formData.descriptionPhotos.forEach((photo) => {
+      const photoUrl = typeof photo === 'string' ? photo : photo?.url;
+
+      if (!photoUrl) {
+        return;
+      }
+
       try {
-        const url = new URL(photo);
+        const url = new URL(photoUrl);
         if (!url.protocol.startsWith('http')) {
           throw new Error('Invalid protocol');
         }
@@ -180,13 +410,49 @@ export default function PropertyModal({ property, onClose, onSave }) {
       const url = property ? `/api/properties/${property.id}` : '/api/properties';
       const method = property ? 'PUT' : 'POST';
 
+      const profilePhotoPayload = formData.profilePhoto
+        ? {
+            url: formData.profilePhoto.url,
+            publicId: formData.profilePhoto.publicId || '',
+            ...(formData.profilePhoto.thumbnailUrl ? { thumbnailUrl: formData.profilePhoto.thumbnailUrl } : {})
+          }
+        : null;
+
+      const descriptionPhotosPayload = formData.descriptionPhotos
+        .map((photo) => {
+          if (!photo) {
+            return null;
+          }
+
+          if (typeof photo === 'string') {
+            return { url: photo, publicId: '' };
+          }
+
+          if (!photo.url) {
+            return null;
+          }
+
+          return {
+            url: photo.url,
+            publicId: photo.publicId || '',
+            ...(photo.thumbnailUrl ? { thumbnailUrl: photo.thumbnailUrl } : {})
+          };
+        })
+        .filter((photo) => photo && photo.url);
+
+      const payload = {
+        ...formData,
+        profilePhoto: profilePhotoPayload,
+        descriptionPhotos: descriptionPhotosPayload
+      };
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -358,43 +624,161 @@ export default function PropertyModal({ property, onClose, onSave }) {
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Photos</h3>
 
-            <div>
-              <label htmlFor="profilePhoto" className="form-label">
+            <div className="space-y-2">
+              <label htmlFor="profilePhotoUpload" className="form-label">
                 <ImageIcon className="h-4 w-4 inline mr-2" />
                 Photo de profil
               </label>
+
+              {formData.profilePhoto ? (
+                <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100">
+                  <Image
+                    src={formData.profilePhoto.thumbnailUrl || formData.profilePhoto.url}
+                    alt={`Photo de profil de ${formData.name || 'la propriété'}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 384px"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveProfilePhoto}
+                    className="absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors p-2"
+                    disabled={isRemovingProfilePhoto || isLoading}
+                  >
+                    {isRemovingProfilePhoto ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="profilePhotoUpload"
+                  className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer text-center transition-colors ${
+                    isUploadingProfilePhoto
+                      ? 'border-primary-400 bg-primary-50 text-primary-600'
+                      : 'border-gray-300 hover:border-primary-400 text-gray-600'
+                  } ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  {isUploadingProfilePhoto ? (
+                    <div className="flex flex-col items-center">
+                      <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                      <span className="text-sm font-medium">Téléversement en cours...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mb-2" />
+                      <span className="text-sm font-medium">Cliquez pour téléverser</span>
+                      <span className="text-xs text-gray-500 mt-1">Formats JPG, PNG, WEBP (10 Mo max)</span>
+                    </>
+                  )}
+                </label>
+              )}
+
               <input
-                id="profilePhoto"
-                name="profilePhoto"
-                type="url"
-                className={`form-input ${errors.profilePhoto ? 'border-danger-500' : ''}`}
-                placeholder="URL de la photo principale"
-                value={formData.profilePhoto}
-                onChange={handleChange}
-                disabled={isLoading}
+                id="profilePhotoUpload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePhotoUpload}
+                disabled={isLoading || isUploadingProfilePhoto}
               />
-              {errors.profilePhoto && (
-                <p className="mt-1 text-sm text-danger-600">{errors.profilePhoto}</p>
+
+              {uploadErrors.profilePhoto && (
+                <p className="text-sm text-danger-600">{uploadErrors.profilePhoto}</p>
               )}
             </div>
 
-            <div>
-              <label htmlFor="descriptionPhotos" className="form-label">
+            <div className="space-y-3">
+              <label htmlFor="descriptionPhotosUpload" className="form-label">
                 <ImageIcon className="h-4 w-4 inline mr-2" />
                 Photos de description
               </label>
-              <textarea
-                id="descriptionPhotos"
-                name="descriptionPhotos"
-                rows={3}
-                className={`form-input ${errors.descriptionPhotos ? 'border-danger-500' : ''}`}
-                placeholder="Une URL par ligne (chambre, salle de bain, etc.)"
-                value={descriptionPhotosInput}
-                onChange={handleDescriptionPhotosChange}
-                disabled={isLoading}
+
+              <label
+                htmlFor="descriptionPhotosUpload"
+                className={`inline-flex items-center justify-center px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  isUploadingDescriptionPhotos
+                    ? 'border-primary-500 bg-primary-50 text-primary-600'
+                    : 'border-dashed border-gray-300 hover:border-primary-400 text-gray-700'
+                } ${isLoading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {isUploadingDescriptionPhotos ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Téléversement...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Ajouter des photos
+                  </>
+                )}
+              </label>
+
+              <input
+                id="descriptionPhotosUpload"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleDescriptionPhotosUpload}
+                disabled={isLoading || isUploadingDescriptionPhotos}
               />
+
+              {uploadErrors.descriptionPhotos && (
+                <p className="text-sm text-danger-600">{uploadErrors.descriptionPhotos}</p>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {formData.descriptionPhotos.length === 0 && (
+                  <p className="col-span-full text-sm text-gray-500">
+                    Ajoutez plusieurs photos pour présenter votre logement.
+                  </p>
+                )}
+
+                {formData.descriptionPhotos.map((photo, index) => {
+                  if (!photo?.url) {
+                    return null;
+                  }
+
+                  const photoKey = photo.publicId || `${photo.url}-${index}`;
+                  const isRemoving = Boolean(removingPhotoIds[photoKey]);
+
+                  return (
+                    <div
+                      key={photoKey}
+                      className="relative h-28 w-full overflow-hidden rounded-lg bg-gray-100"
+                    >
+                      <Image
+                        src={photo.thumbnailUrl || photo.url}
+                        alt={`Photo ${index + 1} de ${formData.name || 'la propriété'}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 192px"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDescriptionPhoto(photo, index)}
+                        className="absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors p-1.5"
+                        disabled={isRemoving || isLoading}
+                      >
+                        {isRemoving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
               {errors.descriptionPhotos && (
-                <p className="mt-1 text-sm text-danger-600">{errors.descriptionPhotos}</p>
+                <p className="text-sm text-danger-600">{errors.descriptionPhotos}</p>
               )}
             </div>
           </div>
