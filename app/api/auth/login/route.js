@@ -1,28 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
-// Mock database - In production, use real database
-const users = [
-  {
-    id: '1',
-    firstName: 'Démo',
-    lastName: 'Utilisateur',
-    email: 'demo@checkinly.com',
-    password: '$2a$10$jLSs2TRYBiH1rn42gXs7ie.rtt94Dszb.w4sF3NvmK/1suZRN.xdG', // demo123
-    role: 'owner',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    firstName: 'Super',
-    lastName: 'Admin',
-    email: 'superadmin@checkinly.com',
-    password: '$2a$10$mGh2Y1yHBfKSFY07dYWyAekI6O/RwpnPaelHqZeUEBbEvXsc1d9Ii', // super123
-    role: 'super_admin',
-    createdAt: new Date().toISOString()
-  }
-];
+import { connectDB } from '@/lib/mongodb';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
@@ -38,8 +17,13 @@ export async function POST(request) {
       );
     }
 
-    // Find user
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const { db } = await connectDB();
+
+    // Find user in database
+    const user = await db.collection('users').findOne({
+      email: email.toLowerCase()
+    });
+
     if (!user) {
       return NextResponse.json(
         { message: 'Email ou mot de passe incorrect' },
@@ -47,7 +31,15 @@ export async function POST(request) {
       );
     }
 
-    // Verify password
+    if (!user.password) {
+      console.error('User record missing password hash for:', user.email);
+      return NextResponse.json(
+        { message: 'Impossible de se connecter pour le moment. Merci de contacter le support.' },
+        { status: 500 }
+      );
+    }
+
+    // Verify password using stored hash
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -59,10 +51,10 @@ export async function POST(request) {
     // Generate JWT token
     const tokenExpiry = remember ? '30d' : '24h';
     const token = jwt.sign(
-      { 
+      {
         userId: user.id,
         email: user.email,
-        role: user.role 
+        role: user.role
       },
       JWT_SECRET,
       { expiresIn: tokenExpiry }
@@ -75,6 +67,8 @@ export async function POST(request) {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
+      subscription: user.subscription,
+      settings: user.settings,
       createdAt: user.createdAt
     };
 
