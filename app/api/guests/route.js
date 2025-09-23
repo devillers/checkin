@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/mongodb';
 import { requireAuth, generateAccessCode } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { buildGuestDocument } from '@/lib/models/guest';
 
 export async function GET(request) {
   try {
@@ -30,16 +32,21 @@ export async function POST(request) {
     const data = await request.json();
     const { db } = await connectDB();
 
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      phone, 
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
       language = 'fr',
       nationality,
       dateOfBirth,
       address,
-      emergencyContact
+      emergencyContact,
+      temporaryPassword,
+      temporaryAccountExpiresAt,
+      guidebookId,
+      depositAmount,
+      depositCurrency = 'EUR'
     } = data;
 
     // Validate required fields
@@ -59,46 +66,56 @@ export async function POST(request) {
       );
     }
 
-    const guestId = uuidv4();
+    if (temporaryPassword && temporaryPassword.length < 8) {
+      return NextResponse.json(
+        { message: 'Le mot de passe invité doit contenir au moins 8 caractères' },
+        { status: 400 }
+      );
+    }
 
-    const guest = {
+    const normalizedDepositAmount = Number(depositAmount ?? 0);
+    if (Number.isNaN(normalizedDepositAmount) || normalizedDepositAmount < 0) {
+      return NextResponse.json(
+        { message: 'Le montant de la caution ne peut pas être négatif' },
+        { status: 400 }
+      );
+    }
+
+    const guestId = uuidv4();
+    const temporaryPasswordHash = temporaryPassword
+      ? await bcrypt.hash(temporaryPassword, 12)
+      : null;
+
+    const currency = typeof depositCurrency === 'string'
+      ? depositCurrency.trim().toUpperCase() || 'EUR'
+      : 'EUR';
+
+    const guest = buildGuestDocument({
       id: guestId,
       userId: user.id,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.toLowerCase(),
-      phone: phone?.trim() || '',
+      firstName,
+      lastName,
+      email,
+      phone,
       language,
-      nationality: nationality?.trim() || '',
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-      address: address ? {
-        street: address.street?.trim() || '',
-        city: address.city?.trim() || '',
-        zipCode: address.zipCode?.trim() || '',
-        country: address.country?.trim() || ''
-      } : null,
-      emergencyContact: emergencyContact ? {
-        name: emergencyContact.name?.trim() || '',
-        phone: emergencyContact.phone?.trim() || '',
-        relation: emergencyContact.relation?.trim() || ''
-      } : null,
+      nationality,
+      dateOfBirth,
+      address,
+      emergencyContact,
       accessCode: generateAccessCode(),
-      status: 'active',
-      preferences: {
-        communication: 'email',
-        notifications: true
+      account: {
+        email,
+        passwordHash: temporaryPasswordHash,
+        expiresAt: temporaryAccountExpiresAt ? new Date(temporaryAccountExpiresAt) : null
       },
-      stats: {
-        totalStays: 0,
-        totalSpent: 0,
-        averageRating: 0,
-        lastStay: null
+      guidebook: {
+        guidebookId: guidebookId || null
       },
-      notes: '',
-      tags: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      deposit: {
+        amount: normalizedDepositAmount,
+        currency
+      }
+    });
 
     // Check if guest with same email already exists for this user
     const existingGuest = await db.collection('guests').findOne({
@@ -113,7 +130,13 @@ export async function POST(request) {
       );
     }
 
-    const result = await db.collection('guests').insertOne(guest);
+    await db.collection('guests').insertOne(guest);
+
+    const { passwordHash, ...account } = guest.account;
+    const guestResponse = {
+      ...guest,
+      account
+    };
 
     // Log activity
     await db.collection('activity_logs').insertOne({
@@ -129,7 +152,7 @@ export async function POST(request) {
       timestamp: new Date()
     });
 
-    return NextResponse.json(guest, { status: 201 });
+    return NextResponse.json(guestResponse, { status: 201 });
 
   } catch (error) {
     console.error('Guests POST error:', error);

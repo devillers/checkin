@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '@/lib/mongodb';
+import { buildAdminUserDocument } from '@/lib/models/user';
 import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
@@ -55,43 +56,28 @@ export async function POST(request) {
 
     // Create user
     const userId = uuidv4();
-    const user = {
+    const user = buildAdminUserDocument({
       id: userId,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role: 'owner',
-      newsletter: newsletter || false,
-      isEmailVerified: false,
+      firstName,
+      lastName,
+      email,
+      passwordHash: hashedPassword,
+      newsletter: Boolean(newsletter),
       subscription: {
         plan: 'free',
         status: 'active',
-        trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days trial
-      },
-      settings: {
-        language: 'fr',
-        timezone: 'Europe/Paris',
-        currency: 'EUR',
-        notifications: {
-          email: true,
-          push: true,
-          sms: false
-        }
-      },
-      stripeCustomerId: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+        trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }
+    });
 
-    const result = await db.collection('users').insertOne(user);
+    await db.collection('users').insertOne(user);
 
     // Generate JWT token
     const token = jwt.sign(
       { 
         userId: userId,
         email: user.email,
-        role: user.role 
+        role: user.role
       },
       JWT_SECRET,
       { expiresIn: '24h' }
