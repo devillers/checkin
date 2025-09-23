@@ -78,9 +78,55 @@ export function validateAndNormalizePropertyPayload(data) {
     }
   };
 
+  const normalizePhoto = (photo) => {
+    if (!photo) {
+      return null;
+    }
+
+    if (typeof photo === 'string') {
+      const url = normalizeUrl(photo);
+      if (!url) {
+        return null;
+      }
+
+      return {
+        url,
+        publicId: ''
+      };
+    }
+
+    if (typeof photo === 'object') {
+      const url = normalizeUrl(photo.url);
+
+      if (!url) {
+        return null;
+      }
+
+      const normalized = {
+        url,
+        publicId: typeof photo.publicId === 'string' ? photo.publicId : ''
+      };
+
+      if (photo.thumbnailUrl) {
+        try {
+          const thumbnail = normalizeUrl(photo.thumbnailUrl);
+          if (thumbnail) {
+            normalized.thumbnailUrl = thumbnail;
+          }
+        } catch (error) {
+          // ignore invalid thumbnail URLs
+        }
+      }
+
+      return normalized;
+    }
+
+    throw new Error('Invalid photo payload');
+  };
+
   let normalizedAirbnbUrl = '';
   let normalizedBookingUrl = '';
-  let normalizedProfilePhoto = '';
+  let normalizedProfilePhoto = null;
 
   try {
     normalizedAirbnbUrl = normalizeUrl(airbnbUrl);
@@ -105,11 +151,11 @@ export function validateAndNormalizePropertyPayload(data) {
   }
 
   try {
-    normalizedProfilePhoto = normalizeUrl(profilePhoto);
+    normalizedProfilePhoto = normalizePhoto(profilePhoto);
   } catch (error) {
     return {
       errorResponse: NextResponse.json(
-        { message: 'URL de photo de profil invalide' },
+        { message: 'Données de photo de profil invalides' },
         { status: 400 }
       )
     };
@@ -129,12 +175,12 @@ export function validateAndNormalizePropertyPayload(data) {
 
     try {
       normalizedDescriptionPhotos = descriptionPhotos
-        .map((photo) => normalizeUrl(photo))
+        .map((photo) => normalizePhoto(photo))
         .filter(Boolean);
     } catch (error) {
       return {
         errorResponse: NextResponse.json(
-          { message: 'Une ou plusieurs URLs de photos de description sont invalides' },
+          { message: 'Une ou plusieurs données de photos de description sont invalides' },
           { status: 400 }
         )
       };

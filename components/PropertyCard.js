@@ -55,6 +55,41 @@ export default function PropertyCard({
     }
   };
 
+  const getPhotoUrl = (photo) => {
+    if (!photo) {
+      return '';
+    }
+
+    if (typeof photo === 'string') {
+      return photo;
+    }
+
+    if (typeof photo === 'object') {
+      return photo.url || '';
+    }
+
+    return '';
+  };
+
+  const getThumbnailUrl = (photo) => {
+    if (!photo) {
+      return '';
+    }
+
+    if (typeof photo === 'string') {
+      return photo;
+    }
+
+    if (typeof photo === 'object') {
+      return photo.thumbnailUrl || photo.url || '';
+    }
+
+    return '';
+  };
+
+  const profilePhotoUrl = getPhotoUrl(property.profilePhoto);
+  const profilePhotoThumbnail = getThumbnailUrl(property.profilePhoto);
+
   return (
     <div className="card hover-lift group relative">
       {/* Header */}
@@ -148,10 +183,10 @@ export default function PropertyCard({
         </div>
       </div>
 
-      {property.profilePhoto && (
+      {profilePhotoUrl && (
         <div className="mb-4 overflow-hidden rounded-lg h-40 bg-gray-100 relative">
           <Image
-            src={property.profilePhoto}
+            src={profilePhotoThumbnail}
             alt={`Photo de ${property.name}`}
             fill
             className="object-cover"
@@ -264,18 +299,31 @@ export default function PropertyCard({
             Photos descriptives
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {property.descriptionPhotos.map((photo, index) => (
-              <div key={photo} className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
-                <Image
-                  src={photo}
-                  alt={`Photo ${index + 1} de ${property.name}`}
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                  unoptimized
-                />
-              </div>
-            ))}
+            {property.descriptionPhotos.map((photo, index) => {
+              const photoData =
+                typeof photo === 'string'
+                  ? { url: photo, thumbnailUrl: photo, publicId: photo }
+                  : photo;
+
+              if (!photoData?.url) {
+                return null;
+              }
+
+              const key = photoData.publicId || `${photoData.url}-${index}`;
+
+              return (
+                <div key={key} className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+                  <Image
+                    src={photoData.thumbnailUrl || photoData.url}
+                    alt={`Photo ${index + 1} de ${property.name}`}
+                    fill
+                    className="object-cover"
+                    sizes="96px"
+                    unoptimized
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
