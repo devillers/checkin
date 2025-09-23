@@ -12,6 +12,15 @@ const users = [
     password: '$2a$10$jLSs2TRYBiH1rn42gXs7ie.rtt94Dszb.w4sF3NvmK/1suZRN.xdG', // demo123
     role: 'owner',
     createdAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    firstName: 'Super',
+    lastName: 'Admin',
+    email: 'superadmin@checkinly.com',
+    password: '$2a$10$mGh2Y1yHBfKSFY07dYWyAekI6O/RwpnPaelHqZeUEBbEvXsc1d9Ii', // super123
+    role: 'super_admin',
+    createdAt: new Date().toISOString()
   }
 ];
 
