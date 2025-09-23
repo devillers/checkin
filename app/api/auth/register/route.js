@@ -9,7 +9,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-i
 
 export async function POST(request) {
   try {
-    const { firstName, lastName, email, password, newsletter } = await request.json();
+    const {
+      firstName: rawFirstName,
+      lastName: rawLastName,
+      email: rawEmail,
+      password,
+      newsletter
+    } = await request.json();
+
+    const firstName = rawFirstName?.trim();
+    const lastName = rawLastName?.trim();
+    const email = rawEmail?.trim().toLowerCase();
 
     // Validate input
     if (!firstName || !lastName || !email || !password) {
@@ -39,8 +49,8 @@ export async function POST(request) {
     const { db } = await connectDB();
 
     // Check if user already exists
-    const existingUser = await db.collection('users').findOne({ 
-      email: email.toLowerCase() 
+    const existingUser = await db.collection('users').findOne({
+      email
     });
 
     if (existingUser) {
@@ -70,7 +80,17 @@ export async function POST(request) {
       }
     });
 
-    await db.collection('users').insertOne(user);
+    try {
+      await db.collection('users').insertOne(user);
+    } catch (error) {
+      if (error?.code === 11000) {
+        return NextResponse.json(
+          { message: 'Un compte existe déjà avec cette adresse email' },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -103,7 +123,7 @@ export async function POST(request) {
       action: 'register',
       details: {
         email: user.email,
-        newsletter: newsletter
+        newsletter: Boolean(newsletter)
       },
       timestamp: new Date(),
       ip: request.headers.get('x-forwarded-for') || 'unknown'
