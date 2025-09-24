@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  Smartphone, 
-  CreditCard, 
+import {
+  Shield,
+  Smartphone,
+  CreditCard,
   QrCode, 
   FileText, 
   Users,
@@ -12,16 +12,55 @@ import {
   Star,
   CheckCircle,
   Globe,
-  Zap
+  Zap,
+  Menu,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen]);
 
   const features = [
     {
@@ -107,13 +146,73 @@ export default function HomePage() {
                 Essai gratuit
               </Link>
             </div>
-            <div className="md:hidden">
-              <Link href="/auth/login" className="btn-primary">
-                Connexion
-              </Link>
+            <div className="md:hidden flex items-center">
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen((prev) => !prev)}
+                className="inline-flex items-center justify-center rounded-md p-2 text-primary-600 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                aria-expanded={isMenuOpen}
+                aria-controls="mobile-nav"
+                aria-label="Ouvrir le menu principal"
+              >
+                {isMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </nav>
+        <div
+          id="mobile-nav"
+          className={`md:hidden border-t border-gray-200 bg-white shadow-lg transition-all duration-300 ${
+            isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 overflow-hidden opacity-0'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+            <Link
+              href="/fonctionnalites"
+              className="block text-gray-700 hover:text-primary-600 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Fonctionnalités
+            </Link>
+            <Link
+              href="/tarifs"
+              className="block text-gray-700 hover:text-primary-600 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Tarifs
+            </Link>
+            <Link
+              href="/contact"
+              className="block text-gray-700 hover:text-primary-600 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Contact
+            </Link>
+            <Link
+              href="#testimonials"
+              className="block text-gray-700 hover:text-primary-600 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Témoignages
+            </Link>
+            <div className="flex flex-col gap-3 pt-2">
+              <Link
+                href="/auth/login"
+                className="btn-secondary text-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Connexion
+              </Link>
+              <Link
+                href="/auth/register"
+                className="btn-primary text-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Essai gratuit
+              </Link>
+            </div>
+          </div>
+        </div>
       </header>
 
       {/* Hero Section */}
