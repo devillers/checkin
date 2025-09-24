@@ -104,6 +104,9 @@ export default function FeaturesPage() {
             <Link href="/tarifs" className="text-gray-600 hover:text-primary-600 transition-colors">
               Tarifs
             </Link>
+            <Link href="/contact" className="text-gray-600 hover:text-primary-600 transition-colors">
+              Contact
+            </Link>
             <Link href="/auth/login" className="btn-secondary">
               Connexion
             </Link>
