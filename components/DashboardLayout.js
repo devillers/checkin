@@ -161,7 +161,7 @@ export default function DashboardLayout({ children }) {
                   <User className="h-5 w-5 text-primary-600" />
                 </div>
                 <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-pink-600">
                     {user ? `${user.firstName} ${user.lastName}` : 'Utilisateur'}
                   </p>
                   <p className="text-xs text-gray-500">
