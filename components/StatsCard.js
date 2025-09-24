@@ -1,6 +1,13 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users } from 'lucide-react';
 
-export default function StatsCard({ title, value, icon: Icon, color = 'primary', trend, trendDirection = 'up' }) {
+export default function StatsCard({
+  title,
+  value,
+  icon: Icon = Users,
+  color = 'primary',
+  trend,
+  trendDirection = 'up'
+}) {
   const colorClasses = {
     primary: 'bg-primary-50 text-primary-600',
     success: 'bg-success-50 text-success-600',

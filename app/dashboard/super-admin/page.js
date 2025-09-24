@@ -304,7 +304,7 @@ export default function SuperAdminDashboard() {
       }
     })();
 
-    if (!parsedUser || parsedUser.role !== 'super_admin') {
+    if (!parsedUser || parsedUser.role !== 'superadmin') {
       setAuthState({ checked: true, authorized: false });
       router.replace('/dashboard');
       return;
@@ -323,34 +323,59 @@ export default function SuperAdminDashboard() {
 
         if (response.ok) {
           const payload = await response.json();
-          setData((previous) => ({
-            ...previous,
-            ...payload,
-            metrics: payload.metrics ?? previous.metrics,
-            quickActions: payload.quickActions ?? previous.quickActions,
-            platformHealth: payload.platformHealth
-              ? { ...previous.platformHealth, ...payload.platformHealth }
-              : previous.platformHealth,
-            monthlyGrowth: payload.monthlyGrowth ?? previous.monthlyGrowth,
-            activity: payload.activity ?? previous.activity,
-            support: payload.support
-              ? {
-                ...previous.support,
-                ...payload.support,
-                tickets: payload.support.tickets ?? previous.support.tickets
+          setData((previous) => {
+            const mergeCollectionsById = (defaults, updates) => {
+              if (!Array.isArray(updates)) {
+                return defaults;
               }
-              : previous.support,
-            topOwners: payload.topOwners ?? previous.topOwners,
-            roadmap: payload.roadmap ?? previous.roadmap,
-            expansion: payload.expansion
-              ? {
-                ...previous.expansion,
-                ...payload.expansion,
-                markets: payload.expansion.markets ?? previous.expansion.markets,
-                pipeline: payload.expansion.pipeline ?? previous.expansion.pipeline
-              }
-              : previous.expansion
-          }));
+
+              const defaultMap = new Map((defaults || []).map((item) => [item.id, item]));
+
+              return updates.map((item) => {
+                const base = defaultMap.get(item.id) || {};
+                return { ...base, ...item };
+              });
+            };
+
+            return {
+              ...previous,
+              ...payload,
+              metrics: mergeCollectionsById(previous.metrics, payload.metrics),
+              quickActions: mergeCollectionsById(previous.quickActions, payload.quickActions),
+              platformHealth: payload.platformHealth
+                ? { ...previous.platformHealth, ...payload.platformHealth }
+                : previous.platformHealth,
+              monthlyGrowth: Array.isArray(payload.monthlyGrowth)
+                ? payload.monthlyGrowth
+                : previous.monthlyGrowth,
+              activity: Array.isArray(payload.activity) ? payload.activity : previous.activity,
+              support: payload.support
+                ? {
+                    ...previous.support,
+                    ...payload.support,
+                    tickets: Array.isArray(payload.support.tickets)
+                      ? payload.support.tickets
+                      : previous.support.tickets
+                  }
+                : previous.support,
+              topOwners: Array.isArray(payload.topOwners)
+                ? payload.topOwners
+                : previous.topOwners,
+              roadmap: Array.isArray(payload.roadmap) ? payload.roadmap : previous.roadmap,
+              expansion: payload.expansion
+                ? {
+                    ...previous.expansion,
+                    ...payload.expansion,
+                    markets: Array.isArray(payload.expansion.markets)
+                      ? payload.expansion.markets
+                      : previous.expansion.markets,
+                    pipeline: Array.isArray(payload.expansion.pipeline)
+                      ? payload.expansion.pipeline
+                      : previous.expansion.pipeline
+                  }
+                : previous.expansion
+            };
+          });
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des données super admin:', error);
