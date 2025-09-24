@@ -103,12 +103,12 @@ export default function DashboardLayout({ children }) {
   };
 
   const navigation =
-    user?.role === 'super_admin'
+      user?.role === 'superadmin'
       ? [baseNavigation[0], superAdminEntry, ...baseNavigation.slice(1)]
       : baseNavigation;
 
   const mobileNavigation =
-    user?.role === 'super_admin'
+      user?.role === 'superadmin'
       ? [baseMobileNavigation[0], superAdminEntry, ...baseMobileNavigation.slice(1)]
       : baseMobileNavigation;
 
