@@ -1195,43 +1195,45 @@ export default function PropertyModal({ property, onClose, onSave }) {
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="general-short-description" className="form-label flex items-center gap-2">
-                      Description courte <span className="text-danger-500">*</span>
-                      <span className="text-xs text-gray-400" aria-live="polite">
-                        {formData.general.shortDescription.length}/160
-                      </span>
-                    </label>
-                    <textarea
-                      id="general-short-description"
-                      maxLength={160}
-                      value={formData.general.shortDescription}
-                      onChange={(event) => updateField('general.shortDescription', event.target.value)}
-                      className={`form-textarea ${errors['general.shortDescription'] ? 'border-danger-500' : ''}`}
-                    />
-                    {errors['general.shortDescription'] && (
-                      <p className="mt-1 text-xs text-danger-600">{errors['general.shortDescription']}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="general-long-description" className="form-label flex items-center gap-2">
-                        Description longue
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div>
+                      <label htmlFor="general-short-description" className="form-label flex items-center gap-2">
+                        Description courte <span className="text-danger-500">*</span>
+                        <span className="text-xs text-gray-400" aria-live="polite">
+                          {formData.general.shortDescription.length}/160
+                        </span>
                       </label>
-                      <span className="text-xs text-gray-400" aria-live="polite">
-                        {formData.general.longDescription.length} caractères
-                      </span>
+                      <textarea
+                        id="general-short-description"
+                        maxLength={160}
+                        value={formData.general.shortDescription}
+                        onChange={(event) => updateField('general.shortDescription', event.target.value)}
+                        className={`form-textarea ${errors['general.shortDescription'] ? 'border-danger-500' : ''}`}
+                      />
+                      {errors['general.shortDescription'] && (
+                        <p className="mt-1 text-xs text-danger-600">{errors['general.shortDescription']}</p>
+                      )}
                     </div>
-                    <textarea
-                      id="general-long-description"
-                      value={formData.general.longDescription}
-                      onChange={(event) => updateField('general.longDescription', event.target.value)}
-                      className={`form-textarea min-h-[160px] ${errors['general.longDescription'] ? 'border-danger-500' : ''}`}
-                    />
-                    {errors['general.longDescription'] && (
-                      <p className="mt-1 text-xs text-danger-600">{errors['general.longDescription']}</p>
-                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="general-long-description" className="form-label flex items-center gap-2">
+                          Description longue
+                        </label>
+                        <span className="text-xs text-gray-400" aria-live="polite">
+                          {formData.general.longDescription.length} caractères
+                        </span>
+                      </div>
+                      <textarea
+                        id="general-long-description"
+                        value={formData.general.longDescription}
+                        onChange={(event) => updateField('general.longDescription', event.target.value)}
+                        className={`form-textarea min-h-[160px] ${errors['general.longDescription'] ? 'border-danger-500' : ''}`}
+                      />
+                      {errors['general.longDescription'] && (
+                        <p className="mt-1 text-xs text-danger-600">{errors['general.longDescription']}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
