@@ -70,6 +70,9 @@ export default function PricingPage() {
             <Link href="/fonctionnalites" className="text-gray-600 hover:text-primary-600 transition-colors">
               Fonctionnalités
             </Link>
+            <Link href="/contact" className="text-gray-600 hover:text-primary-600 transition-colors">
+              Contact
+            </Link>
             <Link href="/auth/login" className="btn-secondary">
               Connexion
             </Link>
