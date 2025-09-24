@@ -221,7 +221,10 @@ export default async function MiniSitePage({ params }) {
       ? format(updatedAt, "d MMMM yyyy", { locale: fr })
       : null;
   const amenities = Array.isArray(property.amenities) ? property.amenities : [];
-  const cityLabel = property.address?.split(',')[1]?.trim() || property.address;
+  const formattedAddress = property.formattedAddress
+    || property.address?.formatted
+    || (typeof property.address === 'string' ? property.address : '');
+  const cityLabel = property.address?.city || formattedAddress || property.name;
 
   return (
     <div className="min-h-screen bg-white text-gray-900">

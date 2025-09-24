@@ -143,6 +143,21 @@ export async function PUT(request, { params }) {
         return errorResponse;
       }
 
+      if (normalizedData?.general?.name && normalizedData.general.name !== existingProperty.general?.name) {
+        const duplicate = await db.collection('properties').findOne({
+          userId: user.id,
+          id: { $ne: id },
+          'general.name': normalizedData.general.name
+        });
+
+        if (duplicate) {
+          return NextResponse.json(
+            { message: 'Vous avez déjà un logement avec ce nom' },
+            { status: 409 }
+          );
+        }
+      }
+
       updatePayload = { ...updatePayload, ...normalizedData };
     }
 

@@ -48,7 +48,12 @@ export async function GET(request) {
           status: 1,
           guestName: { $concat: [{ $arrayElemAt: ['$guest.firstName', 0] }, ' ', { $arrayElemAt: ['$guest.lastName', 0] }] },
           property: { $arrayElemAt: ['$property.name', 0] },
-          propertyAddress: { $arrayElemAt: ['$property.address', 0] },
+          propertyAddress: {
+            $ifNull: [
+              { $arrayElemAt: ['$property.formattedAddress', 0] },
+              { $arrayElemAt: ['$property.address.formatted', 0] }
+            ]
+          },
           adults: 1,
           children: 1,
           totalAmount: 1
