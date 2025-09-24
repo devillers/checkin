@@ -121,9 +121,9 @@ export default function PropertyCard({
   }, [property]);
 
   return (
-    <div className="card hover-lift group relative">
+    <div className=" shadow-md bg-white hover-lift group relative">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-4 p-2 uppercase">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
@@ -135,7 +135,7 @@ export default function PropertyCard({
           </div>
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{formattedAddress || 'Adresse non renseignée'}</span>
+            <span className="">{formattedAddress || 'Adresse non renseignée'}</span>
           </div>
         </div>
 
@@ -145,13 +145,13 @@ export default function PropertyCard({
             onClick={() => setShowDropdown(!showDropdown)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <MoreVertical className="h-5 w-5 text-gray-500" />
+            <MoreVertical className="h-5 w-5 text-gray-500 " />
           </button>
           
           {showDropdown && (
             <>
               <div 
-                className="fixed inset-0 z-10" 
+                className="fixed inset-0 z-10 " 
                 onClick={() => setShowDropdown(false)}
               />
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
@@ -227,7 +227,7 @@ export default function PropertyCard({
       )}
 
       {/* Property Details */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-3 gap-4 mb-4 ">
         <div className="text-center">
           <div className="flex items-center justify-center mb-1">
             <Users className="h-4 w-4 text-gray-400" />
@@ -252,7 +252,7 @@ export default function PropertyCard({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 p-8">
         <div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">CA total</span>
@@ -292,7 +292,7 @@ export default function PropertyCard({
       </div>
 
       {(property.airbnbUrl || property.bookingUrl) && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-gray-100 p-4">
           <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center">
             <Link2 className="h-4 w-4 mr-2" />
             Référencement
@@ -323,7 +323,7 @@ export default function PropertyCard({
       )}
 
       {property.descriptionPhotos?.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-gray-100 p-4">
           <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center">
             <ImageIcon className="h-4 w-4 mr-2" />
             Photos descriptives
@@ -360,8 +360,8 @@ export default function PropertyCard({
 
       {/* Description */}
       {property.description && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <p className="text-sm text-gray-600 line-clamp-2">
+        <div className="mt-3 pt-3 border-t border-gray-100 p-2 ">
+          <p className="text-xs text-gray-600 line-clamp-2 text-justify">
             {property.description}
           </p>
         </div>
