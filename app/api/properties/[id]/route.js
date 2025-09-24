@@ -177,6 +177,15 @@ export async function PUT(request, { params }) {
       { returnDocument: 'after' }
     );
 
+    const updatedProperty = updateResult?.value ?? updateResult;
+
+    if (!updatedProperty) {
+      return NextResponse.json(
+        { message: 'Propriété introuvable' },
+        { status: 404 }
+      );
+    }
+
     await db.collection('activity_logs').insertOne({
       id: uuidv4(),
       userId: user.id,
@@ -184,12 +193,12 @@ export async function PUT(request, { params }) {
       action: 'updated',
       details: {
         propertyId: id,
-        propertyName: updateResult.value.name
+        propertyName: updatedProperty.name ?? existingProperty.name ?? ''
       },
       timestamp: new Date()
     });
 
-    return NextResponse.json(updateResult.value);
+    return NextResponse.json(updatedProperty);
   } catch (error) {
     console.error('Property PUT error:', error);
     return NextResponse.json(
