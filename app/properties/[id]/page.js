@@ -11,7 +11,10 @@ import {
   Bath,
   Settings,
   Calendar,
-  Key
+  Key,
+  Globe,
+  Link2,
+  Copy
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -31,6 +34,8 @@ export default function PropertyDetailsPage() {
   const [property, setProperty] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [miniSiteUrl, setMiniSiteUrl] = useState('');
+  const [isMiniSiteCopied, setIsMiniSiteCopied] = useState(false);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -81,6 +86,12 @@ export default function PropertyDetailsPage() {
     fetchProperty();
   }, [propertyId, router]);
 
+  useEffect(() => {
+    if (property?.id && property?.userId && typeof window !== 'undefined') {
+      setMiniSiteUrl(`${window.location.origin}/sejour/${property.userId}/${property.id}`);
+    }
+  }, [property]);
+
   const handleGoBack = () => {
     router.push('/properties');
   };
@@ -94,6 +105,26 @@ export default function PropertyDetailsPage() {
   const handleOpenCalendar = () => {
     if (property?.id) {
       router.push(`/dashboard/calendrier?property=${property.id}`);
+    }
+  };
+
+  const handlePublish = () => {
+    if (miniSiteUrl) {
+      window.open(miniSiteUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleCopyMiniSiteUrl = async () => {
+    if (!miniSiteUrl || typeof navigator === 'undefined' || !navigator?.clipboard?.writeText) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(miniSiteUrl);
+      setIsMiniSiteCopied(true);
+      setTimeout(() => setIsMiniSiteCopied(false), 2000);
+    } catch (copyError) {
+      console.error('Failed to copy mini site URL:', copyError);
     }
   };
 
@@ -117,6 +148,14 @@ export default function PropertyDetailsPage() {
               >
                 <Calendar className="mr-2 h-4 w-4" />
                 Calendrier
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={!miniSiteUrl}
+                className="btn-secondary inline-flex items-center border-primary-200 text-primary-700 hover:bg-primary-50"
+              >
+                <Globe className="mr-2 h-4 w-4" />
+                Publier
               </button>
               <button
                 onClick={handleOpenSettings}
@@ -161,6 +200,46 @@ export default function PropertyDetailsPage() {
                 </div>
               </div>
             </div>
+
+            {miniSiteUrl && (
+              <div className="card bg-primary-50/40 border-primary-100">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-primary-700">
+                      <Link2 className="h-4 w-4" />
+                      <span className="text-sm font-semibold uppercase tracking-wide">Mini site de réservation</span>
+                    </div>
+                    <h2 className="mt-2 text-xl font-semibold text-gray-900">Partagez votre lien de réservation</h2>
+                    <p className="mt-2 text-gray-600">
+                      Ce lien ouvre un mini site inspiré d&apos;Airbnb, prêt à être partagé avec vos voyageurs. Il accueillera vos futures synchronisations de calendriers (API ou lien iCal).
+                    </p>
+                  </div>
+                  <div className="w-full max-w-md rounded-lg border border-primary-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">Lien public</p>
+                    <div className="mt-2 flex flex-col gap-2">
+                      <code className="block truncate rounded-md bg-primary-50 px-3 py-2 text-sm text-primary-800">{miniSiteUrl}</code>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handlePublish}
+                          className="btn-primary inline-flex flex-1 items-center justify-center"
+                        >
+                          <Globe className="mr-2 h-4 w-4" />
+                          Ouvrir
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyMiniSiteUrl}
+                          className="btn-secondary inline-flex items-center"
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          {isMiniSiteCopied ? 'Copié !' : 'Copier'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="card space-y-4">
