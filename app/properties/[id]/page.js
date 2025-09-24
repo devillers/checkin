@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Image from 'next/image';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const PROPERTY_TYPE_LABELS = {
   apartment: 'Appartement',
@@ -30,6 +32,8 @@ const PROPERTY_TYPE_LABELS = {
   chalet: 'Chalet',
   bungalow: 'Bungalow'
 };
+
+const isDirectVideoUrl = (url) => /\.(mp4|webm|ogg)(?:\?.*)?$/i.test(url ?? '');
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -662,15 +666,39 @@ export default function PropertyDetailsPage() {
                             )}
                           </div>
                           {category.videoUrl && (
-                            <a
-                              href={category.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 rounded-full border border-primary-200 px-3 py-1 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-50"
-                            >
-                              <Play className="h-4 w-4" />
-                              Voir la vidéo
-                            </a>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center gap-2 rounded-full border border-primary-200 px-3 py-1 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-50"
+                                >
+                                  <Play className="h-4 w-4" />
+                                  Voir la vidéo
+                                </button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none sm:p-0">
+                                <div className="overflow-hidden rounded-2xl bg-black">
+                                  <AspectRatio ratio={16 / 9}>
+                                    {isDirectVideoUrl(category.videoUrl) ? (
+                                      <video
+                                        src={category.videoUrl}
+                                        controls
+                                        autoPlay
+                                        className="h-full w-full object-contain"
+                                      />
+                                    ) : (
+                                      <iframe
+                                        src={category.videoUrl}
+                                        title={`Vidéo ${category.label}`}
+                                        className="h-full w-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
+                                      />
+                                    )}
+                                  </AspectRatio>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           )}
                         </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
