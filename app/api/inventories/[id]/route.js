@@ -3,6 +3,36 @@ import { connectDB } from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 
+const formatPropertyAddress = (property) => {
+  if (!property) {
+    return null;
+  }
+
+  if (typeof property.address === 'string') {
+    return property.address;
+  }
+
+  if (property.formattedAddress) {
+    return property.formattedAddress;
+  }
+
+  if (property.address?.formatted) {
+    return property.address.formatted;
+  }
+
+  if (property.address && typeof property.address === 'object') {
+    const { streetNumber, street, complement, postalCode, city, country } = property.address;
+    return [
+      [streetNumber, street].filter(Boolean).join(' '),
+      complement,
+      [postalCode, city].filter(Boolean).join(' '),
+      country
+    ].filter(Boolean).join(', ');
+  }
+
+  return null;
+};
+
 export async function GET(request, { params }) {
   try {
     const user = await requireAuth(request);
@@ -49,7 +79,7 @@ export async function GET(request, { params }) {
     const responseData = {
       ...inventoryData,
       propertyName: property?.name || null,
-      propertyAddress: property?.address || null,
+      propertyAddress: formatPropertyAddress(property),
       guest: guest
         ? {
             id: guest.id,
@@ -178,7 +208,7 @@ export async function PUT(request, { params }) {
     const responseData = {
       ...inventoryData,
       propertyName: updatedProperty?.name || null,
-      propertyAddress: updatedProperty?.address || null,
+      propertyAddress: formatPropertyAddress(updatedProperty),
       guest: guest
         ? {
             id: guest.id,

@@ -37,6 +37,18 @@ export async function POST(request) {
       return errorResponse;
     }
 
+    const existingByName = await db.collection('properties').findOne({
+      userId: user.id,
+      'general.name': normalizedData.general?.name ?? normalizedData.name
+    });
+
+    if (existingByName) {
+      return NextResponse.json(
+        { message: 'Vous avez déjà un logement avec ce nom' },
+        { status: 409 }
+      );
+    }
+
     const propertyId = uuidv4();
 
     const property = {

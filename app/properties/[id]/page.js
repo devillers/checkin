@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -24,7 +24,9 @@ const PROPERTY_TYPE_LABELS = {
   studio: 'Studio',
   villa: 'Villa',
   loft: 'Loft',
-  room: 'Chambre'
+  room: 'Chambre',
+  chalet: 'Chalet',
+  bungalow: 'Bungalow'
 };
 
 export default function PropertyDetailsPage() {
@@ -36,6 +38,77 @@ export default function PropertyDetailsPage() {
   const [error, setError] = useState(null);
   const [miniSiteUrl, setMiniSiteUrl] = useState('');
   const [isMiniSiteCopied, setIsMiniSiteCopied] = useState(false);
+
+  const formattedAddress = useMemo(() => {
+    if (!property) {
+      return '';
+    }
+
+    if (typeof property.address === 'string') {
+      return property.address;
+    }
+
+    if (property.formattedAddress) {
+      return property.formattedAddress;
+    }
+
+    if (property.address?.formatted) {
+      return property.address.formatted;
+    }
+
+    if (property.address && typeof property.address === 'object') {
+      const { streetNumber, street, complement, postalCode, city, country } = property.address;
+      return [
+        [streetNumber, street].filter(Boolean).join(' '),
+        complement,
+        [postalCode, city].filter(Boolean).join(' '),
+        country
+      ].filter(Boolean).join(', ');
+    }
+
+    return '';
+  }, [property]);
+
+  const operations = property?.operations || {};
+  const depositText = useMemo(() => {
+    if (!property) {
+      return 'Non défini';
+    }
+
+    const deposit = operations.deposit || {};
+
+    if (deposit.type === 'range') {
+      if (deposit.min != null && deposit.max != null) {
+        const methodLabel = deposit.method === 'virement' ? 'Virement' : 'Empreinte';
+        return `${deposit.min} € - ${deposit.max} € (${methodLabel})`;
+      }
+      return 'Fourchette de caution non définie';
+    }
+
+    if (deposit.type === 'fixed' && deposit.amount != null) {
+      const methodLabel = deposit.method === 'virement' ? 'Virement' : 'Empreinte';
+      return `${deposit.amount} € (${methodLabel})`;
+    }
+
+    if (property.settings?.requireDeposit) {
+      return `${property.settings.depositAmount ?? 0} €`;
+    }
+
+    return 'Non requis';
+  }, [operations.deposit, property]);
+
+  const checkInTime = operations.checkInTime || property?.settings?.checkInTime || 'Non défini';
+  const checkOutTime = operations.checkOutTime || property?.settings?.checkOutTime || 'Non défini';
+  const checkInModeLabel = operations.checkInMode === 'self'
+    ? 'Autonome'
+    : operations.checkInMode === 'in_person'
+      ? 'En personne'
+      : null;
+  const checkOutModeLabel = operations.checkOutMode === 'self'
+    ? 'Autonome'
+    : operations.checkOutMode === 'in_person'
+      ? 'En personne'
+      : null;
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -249,7 +322,7 @@ export default function PropertyDetailsPage() {
                     <MapPin className="mt-1 h-5 w-5 text-primary-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-700">Adresse</p>
-                      <p className="text-gray-600">{property.address}</p>
+                      <p className="text-gray-600">{formattedAddress || 'Adresse non renseignée'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -281,11 +354,21 @@ export default function PropertyDetailsPage() {
                 <div className="space-y-3 text-gray-600">
                   <p>
                     <span className="font-medium text-gray-700">Check-in :</span>{' '}
-                    {property.settings?.checkInTime || 'Non défini'}
+                    {checkInTime}
+                    {checkInModeLabel && (
+                      <span className="ml-2 rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-700">
+                        {checkInModeLabel}
+                      </span>
+                    )}
                   </p>
                   <p>
                     <span className="font-medium text-gray-700">Check-out :</span>{' '}
-                    {property.settings?.checkOutTime || 'Non défini'}
+                    {checkOutTime}
+                    {checkOutModeLabel && (
+                      <span className="ml-2 rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-700">
+                        {checkOutModeLabel}
+                      </span>
+                    )}
                   </p>
                   <p className="flex items-center gap-2">
                     <Key className="h-4 w-4 text-primary-600" />
@@ -295,9 +378,7 @@ export default function PropertyDetailsPage() {
                   </p>
                   <p>
                     <span className="font-medium text-gray-700">Dépôt :</span>{' '}
-                    {property.settings?.requireDeposit
-                      ? `${property.settings?.depositAmount ?? 0} €`
-                      : 'Non requis'}
+                    {depositText}
                   </p>
                   <p>
                     <span className="font-medium text-gray-700">Frais de ménage :</span>{' '}
@@ -305,6 +386,23 @@ export default function PropertyDetailsPage() {
                       ? `${property.settings.cleaningFee} €`
                       : 'Non défini'}
                   </p>
+                  <div className="flex flex-wrap gap-2 pt-2 text-xs">
+                    <span
+                      className={`rounded-full px-3 py-1 font-medium ${operations.smokingAllowed ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}`}
+                    >
+                      {operations.smokingAllowed ? 'Fumeurs acceptés' : 'Non fumeurs'}
+                    </span>
+                    <span
+                      className={`rounded-full px-3 py-1 font-medium ${operations.petsAllowed ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}`}
+                    >
+                      {operations.petsAllowed ? 'Animaux acceptés' : 'Animaux interdits'}
+                    </span>
+                    <span
+                      className={`rounded-full px-3 py-1 font-medium ${operations.partiesAllowed ? 'bg-warning-100 text-warning-700' : 'bg-gray-100 text-gray-600'}`}
+                    >
+                      {operations.partiesAllowed ? 'Fêtes autorisées' : 'Fêtes interdites'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

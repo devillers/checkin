@@ -17,7 +17,7 @@ import {
   Link2,
   ImageIcon
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function PropertyCard({
   property,
@@ -90,6 +90,36 @@ export default function PropertyCard({
   const profilePhotoUrl = getPhotoUrl(property.profilePhoto);
   const profilePhotoThumbnail = getThumbnailUrl(property.profilePhoto);
 
+  const formattedAddress = useMemo(() => {
+    if (!property) {
+      return '';
+    }
+
+    if (typeof property.address === 'string') {
+      return property.address;
+    }
+
+    if (property.formattedAddress) {
+      return property.formattedAddress;
+    }
+
+    if (property.address?.formatted) {
+      return property.address.formatted;
+    }
+
+    if (property.address && typeof property.address === 'object') {
+      const { streetNumber, street, complement, postalCode, city, country } = property.address;
+      return [
+        [streetNumber, street].filter(Boolean).join(' '),
+        complement,
+        [postalCode, city].filter(Boolean).join(' '),
+        country
+      ].filter(Boolean).join(', ');
+    }
+
+    return '';
+  }, [property]);
+
   return (
     <div className="card hover-lift group relative">
       {/* Header */}
@@ -105,7 +135,7 @@ export default function PropertyCard({
           </div>
           <div className="flex items-center text-sm text-gray-600">
             <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{property.address}</span>
+            <span className="truncate">{formattedAddress || 'Adresse non renseignée'}</span>
           </div>
         </div>
 
