@@ -427,6 +427,24 @@ export default function PropertyModal({ property, onClose, onSave }) {
     };
   }, [hasUnsavedChanges]);
 
+  const scheduleAutosave = useCallback((nextData) => {
+    setHasUnsavedChanges(true);
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+    autosaveTimeoutRef.current = setTimeout(() => {
+      setIsAutosaving(true);
+      requestAnimationFrame(() => {
+        try {
+          localStorage.setItem(draftKeyRef.current, JSON.stringify(nextData));
+        } catch (error) {
+          console.error('Failed to persist draft:', error);
+        }
+        setIsAutosaving(false);
+      });
+    }, 800);
+  }, []);
+
   useEffect(() => {
     if (isSlugManual) {
       return;
@@ -463,24 +481,6 @@ export default function PropertyModal({ property, onClose, onSave }) {
       });
     }
   }, [formData.general.name, formData.address.city, formData.seo.metaTitle, scheduleAutosave]);
-
-  const scheduleAutosave = useCallback((nextData) => {
-    setHasUnsavedChanges(true);
-    if (autosaveTimeoutRef.current) {
-      clearTimeout(autosaveTimeoutRef.current);
-    }
-    autosaveTimeoutRef.current = setTimeout(() => {
-      setIsAutosaving(true);
-      requestAnimationFrame(() => {
-        try {
-          localStorage.setItem(draftKeyRef.current, JSON.stringify(nextData));
-        } catch (error) {
-          console.error('Failed to persist draft:', error);
-        }
-        setIsAutosaving(false);
-      });
-    }, 800);
-  }, []);
 
   const updateField = useCallback((path, value) => {
     setFormData((prev) => {
