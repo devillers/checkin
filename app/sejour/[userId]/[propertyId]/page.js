@@ -461,30 +461,7 @@ export default async function MiniSitePage({ params }) {
           </section>
         )}
 
-        <section className="grid gap-4 md:grid-cols-12">
-          {gallery.slice(0, 5).map((photo, index) => (
-            <div
-              key={photo.url || index}
-              className={`relative overflow-hidden rounded-3xl ${
-                index === 0
-                  ? 'min-h-[260px] md:col-span-7 md:row-span-2 md:min-h-[520px]'
-                  : index === 1
-                  ? 'min-h-[220px] md:col-span-5 md:min-h-[280px]'
-                  : index === 2
-                  ? 'min-h-[220px] md:col-span-5 md:min-h-[280px]'
-                  : 'min-h-[180px] md:col-span-3 md:min-h-[220px]'
-              }`}
-            >
-              <Image
-                src={photo.url}
-                alt={photo.alt || `Photo ${index + 1} de la propriété`}
-                fill
-                sizes={index === 0 ? '(min-width: 768px) 58vw, 100vw' : '(min-width: 768px) 42vw, 100vw'}
-                className="object-cover transition-transform duration-500 hover:scale-105"
-              />
-            </div>
-          ))}
-        </section>
+   
 
         <section className="grid gap-8 lg:grid-cols-[1.4fr,1fr]">
           <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-soft">
