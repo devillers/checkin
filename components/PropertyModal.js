@@ -715,41 +715,70 @@ export default function PropertyModal({ property, onClose, onSave }) {
 
   const handleToggleFlag = (categoryId, mediaId, key) => {
     setFormData((prev) => {
+      let toggledOn = false;
+      let found = false;
+
       const categories = prev.medias.categories.map((category) => {
+        const mediaList = Array.isArray(category.media) ? category.media : [];
         if (category.id !== categoryId) {
           return category;
         }
-        return {
-          ...category,
-          media: category.media.map((item) => {
-            if (item.id !== mediaId) {
-              return item;
-            }
-            if (key === 'isHero') {
-              return {
-                ...item,
-                isHero: !item.isHero
-              };
-            }
-            if (key === 'hidden') {
-              return {
-                ...item,
-                hidden: !item.hidden
-              };
-            }
-            if (key === 'isCover') {
-              return {
-                ...item,
-                isCover: !item.isCover
-              };
-            }
+
+        const updatedMedia = mediaList.map((item) => {
+          if (item.id !== mediaId) {
             return item;
-          })
-        };
+          }
+          found = true;
+          if (key === 'isHero') {
+            const nextValue = !item.isHero;
+            if (nextValue) {
+              toggledOn = true;
+            }
+            return { ...item, isHero: nextValue };
+          }
+          if (key === 'hidden') {
+            return { ...item, hidden: !item.hidden };
+          }
+          if (key === 'isCover') {
+            const nextValue = !item.isCover;
+            if (nextValue) {
+              toggledOn = true;
+            }
+            return { ...item, isCover: nextValue };
+          }
+          return item;
+        });
+
+        return { ...category, media: updatedMedia };
       });
+
+      if (!found) {
+        return prev;
+      }
+
+      const normalizedCategories =
+        (key === 'isHero' || key === 'isCover') && toggledOn
+          ? categories.map((category) => {
+              const mediaList = Array.isArray(category.media) ? category.media : [];
+              const updatedMedia = mediaList.map((item) => {
+                if (category.id === categoryId && item.id === mediaId) {
+                  return item;
+                }
+                if (key === 'isHero' && item.isHero) {
+                  return { ...item, isHero: false };
+                }
+                if (key === 'isCover' && item.isCover) {
+                  return { ...item, isCover: false };
+                }
+                return item;
+              });
+              return { ...category, media: updatedMedia };
+            })
+          : categories;
+
       const updated = {
         ...prev,
-        medias: { categories }
+        medias: { categories: normalizedCategories }
       };
       scheduleAutosave(updated);
       return updated;
@@ -835,6 +864,30 @@ export default function PropertyModal({ property, onClose, onSave }) {
   const totalSections = sectionOrder.length;
   const completedCount = sectionOrder.reduce((acc, section) => acc + (completedSections[section] ? 1 : 0), 0);
   const progressValue = Math.round((completedCount / totalSections) * 100);
+
+  const selectedHeroMediaId = useMemo(() => {
+    for (const category of formData.medias.categories) {
+      const mediaList = Array.isArray(category.media) ? category.media : [];
+      for (const media of mediaList) {
+        if (media?.isHero) {
+          return media.id;
+        }
+      }
+    }
+    return null;
+  }, [formData.medias.categories]);
+
+  const selectedCoverMediaId = useMemo(() => {
+    for (const category of formData.medias.categories) {
+      const mediaList = Array.isArray(category.media) ? category.media : [];
+      for (const media of mediaList) {
+        if (media?.isCover) {
+          return media.id;
+        }
+      }
+    }
+    return null;
+  }, [formData.medias.categories]);
 
   const validate = () => {
     const newErrors = {};
@@ -1481,6 +1534,15 @@ export default function PropertyModal({ property, onClose, onSave }) {
                     </button>
                   </div>
 
+                  <div className="rounded-lg border border-primary-100 bg-primary-50/60 px-4 py-3 text-xs text-primary-900">
+                    <p>
+                      <span className="font-semibold text-primary-800">Image héro</span> : photo principale affichée en tête du mini-site et utilisée comme vignette du séjour.
+                    </p>
+                    <p className="mt-2">
+                      <span className="font-semibold text-primary-800">Photo de couverture</span> : image mise en avant dans les galeries voyageurs et vos supports marketing.
+                    </p>
+                  </div>
+
                   <div className="space-y-4">
                     {formData.medias.categories.map((category, index) => (
                       <div key={category.id} className="rounded-lg border border-gray-200">
@@ -1612,12 +1674,16 @@ export default function PropertyModal({ property, onClose, onSave }) {
                             )}
 
                             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                              {category.media.map((mediaItem, mediaIndex) => (
-                                <div
-                                  key={mediaItem.id}
-                                  className="group relative h-32 overflow-hidden rounded-lg border border-gray-200"
-                                  draggable
-                                  onDragStart={(event) => {
+                              {category.media.map((mediaItem, mediaIndex) => {
+                                const canToggleHero = !selectedHeroMediaId || selectedHeroMediaId === mediaItem.id;
+                                const canToggleCover = !selectedCoverMediaId || selectedCoverMediaId === mediaItem.id;
+
+                                return (
+                                  <div
+                                    key={mediaItem.id}
+                                    className="group relative h-32 overflow-hidden rounded-lg border border-gray-200"
+                                    draggable
+                                    onDragStart={(event) => {
                                     event.dataTransfer.effectAllowed = 'move';
                                     event.dataTransfer.setData(
                                       'application/json',
@@ -1665,22 +1731,26 @@ export default function PropertyModal({ property, onClose, onSave }) {
                                   )}
 
                                   <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-black/60 p-2 text-[10px] text-white opacity-0 transition group-hover:opacity-100">
-                                    <label className="flex items-center gap-2">
-                                      <input
-                                        type="checkbox"
-                                        checked={mediaItem.isHero}
-                                        onChange={() => handleToggleFlag(category.id, mediaItem.id, 'isHero')}
-                                      />
-                                      Prioritaire (hero)
-                                    </label>
-                                    <label className="flex items-center gap-2">
-                                      <input
-                                        type="checkbox"
-                                        checked={mediaItem.isCover}
-                                        onChange={() => handleToggleFlag(category.id, mediaItem.id, 'isCover')}
-                                      />
-                                      Image de couverture
-                                    </label>
+                                    {canToggleHero && (
+                                      <label className="flex items-center gap-2">
+                                        <input
+                                          type="checkbox"
+                                          checked={mediaItem.isHero}
+                                          onChange={() => handleToggleFlag(category.id, mediaItem.id, 'isHero')}
+                                        />
+                                        Prioritaire (hero)
+                                      </label>
+                                    )}
+                                    {canToggleCover && (
+                                      <label className="flex items-center gap-2">
+                                        <input
+                                          type="checkbox"
+                                          checked={mediaItem.isCover}
+                                          onChange={() => handleToggleFlag(category.id, mediaItem.id, 'isCover')}
+                                        />
+                                        Image de couverture
+                                      </label>
+                                    )}
                                     <label className="flex items-center gap-2">
                                       <input
                                         type="checkbox"
@@ -1699,7 +1769,8 @@ export default function PropertyModal({ property, onClose, onSave }) {
                                     {removingMediaIds[mediaItem.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                                   </button>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
 
                             {category.media.map((mediaItem, mediaIndex) => (

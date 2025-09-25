@@ -112,6 +112,30 @@ export default function PropertyDetailsPage() {
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [photosError, setPhotosError] = useState(null);
 
+  const selectedHeroPosition = useMemo(() => {
+    for (let categoryIndex = 0; categoryIndex < photosDraft.length; categoryIndex += 1) {
+      const mediaList = Array.isArray(photosDraft[categoryIndex]?.media) ? photosDraft[categoryIndex].media : [];
+      for (let mediaIndex = 0; mediaIndex < mediaList.length; mediaIndex += 1) {
+        if (mediaList[mediaIndex]?.isHero) {
+          return { categoryIndex, mediaIndex };
+        }
+      }
+    }
+    return null;
+  }, [photosDraft]);
+
+  const selectedCoverPosition = useMemo(() => {
+    for (let categoryIndex = 0; categoryIndex < photosDraft.length; categoryIndex += 1) {
+      const mediaList = Array.isArray(photosDraft[categoryIndex]?.media) ? photosDraft[categoryIndex].media : [];
+      for (let mediaIndex = 0; mediaIndex < mediaList.length; mediaIndex += 1) {
+        if (mediaList[mediaIndex]?.isCover) {
+          return { categoryIndex, mediaIndex };
+        }
+      }
+    }
+    return null;
+  }, [photosDraft]);
+
   const formattedAddress = useMemo(() => {
     if (!property) return '';
 
@@ -1110,10 +1134,49 @@ export default function PropertyDetailsPage() {
   const handlePhotoMediaChange = (categoryIndex, mediaIndex, field, value) => {
     setPhotosDraft((prev) =>
       prev.map((category, i) => {
-        if (i !== categoryIndex) return category;
         const mediaList = Array.isArray(category.media) ? category.media : [];
-        const updatedMedia = mediaList.map((m, j) => (j === mediaIndex ? { ...m, [field]: value } : m));
-        return { ...category, media: updatedMedia };
+
+        if (i === categoryIndex) {
+          const updatedMedia = mediaList.map((mediaItem, j) => {
+            if (j === mediaIndex) {
+              return { ...mediaItem, [field]: value };
+            }
+            if (field === 'isHero' && value && mediaItem.isHero) {
+              return { ...mediaItem, isHero: false };
+            }
+            if (field === 'isCover' && value && mediaItem.isCover) {
+              return { ...mediaItem, isCover: false };
+            }
+            return mediaItem;
+          });
+          return { ...category, media: updatedMedia };
+        }
+
+        if (field === 'isHero' && value) {
+          let hasChange = false;
+          const updatedMedia = mediaList.map((mediaItem) => {
+            if (mediaItem.isHero) {
+              hasChange = true;
+              return { ...mediaItem, isHero: false };
+            }
+            return mediaItem;
+          });
+          return hasChange ? { ...category, media: updatedMedia } : category;
+        }
+
+        if (field === 'isCover' && value) {
+          let hasChange = false;
+          const updatedMedia = mediaList.map((mediaItem) => {
+            if (mediaItem.isCover) {
+              hasChange = true;
+              return { ...mediaItem, isCover: false };
+            }
+            return mediaItem;
+          });
+          return hasChange ? { ...category, media: updatedMedia } : category;
+        }
+
+        return category;
       })
     );
   };
@@ -2113,6 +2176,16 @@ export default function PropertyDetailsPage() {
                 {isEditingPhotos ? (
                   photosDraft.length > 0 ? (
                     <div className="space-y-6">
+                      <div className="rounded-lg border border-primary-100 bg-primary-50/60 px-4 py-3 text-xs text-primary-900">
+                        <p>
+                          <span className="font-semibold text-primary-800">Image héro</span> : photo principale affichée en tête du
+                          mini-site et utilisée comme vignette du séjour.
+                        </p>
+                        <p className="mt-2">
+                          <span className="font-semibold text-primary-800">Photo de couverture</span> : image mise en avant dans les
+                          galeries voyageurs et vos supports marketing.
+                        </p>
+                      </div>
                       {photosDraft.map((category, categoryIndex) => (
                         <div key={category.id || category.key || categoryIndex} className="card space-y-4">
                           <div className="grid gap-3 sm:grid-cols-2">
@@ -2157,8 +2230,18 @@ export default function PropertyDetailsPage() {
 
                           <div className="space-y-4">
                             {Array.isArray(category.media) && category.media.length > 0 ? (
-                              category.media.map((mediaItem, mediaIndex) => (
-                                <div key={mediaItem.id || mediaItem.url || mediaIndex} className="grid gap-4 sm:grid-cols-[180px_1fr]">
+                              category.media.map((mediaItem, mediaIndex) => {
+                                const heroOptionAvailable =
+                                  !selectedHeroPosition ||
+                                  (selectedHeroPosition.categoryIndex === categoryIndex &&
+                                    selectedHeroPosition.mediaIndex === mediaIndex);
+                                const coverOptionAvailable =
+                                  !selectedCoverPosition ||
+                                  (selectedCoverPosition.categoryIndex === categoryIndex &&
+                                    selectedCoverPosition.mediaIndex === mediaIndex);
+
+                                return (
+                                  <div key={mediaItem.id || mediaItem.url || mediaIndex} className="grid gap-4 sm:grid-cols-[180px_1fr]">
                                   <div className="relative h-32 w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-100">
                                     {mediaItem.url ? (
                                       <Image
@@ -2195,29 +2278,49 @@ export default function PropertyDetailsPage() {
                                       />
                                     </div>
                                     <div className="flex flex-wrap gap-3">
-                                      <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
-                                        <input
-                                          type="checkbox"
-                                          checked={Boolean(mediaItem.isCover)}
-                                          onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'isCover', e.target.checked)}
-                                          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                        />
-                                        Photo de couverture
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
-                                        <input
-                                          type="checkbox"
-                                          checked={Boolean(mediaItem.isHero)}
-                                          onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'isHero', e.target.checked)}
-                                          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                        />
-                                        Image héro
-                                      </label>
+                                      {coverOptionAvailable && (
+                                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                          <input
+                                            type="checkbox"
+                                            checked={Boolean(mediaItem.isCover)}
+                                            onChange={(e) =>
+                                              handlePhotoMediaChange(
+                                                categoryIndex,
+                                                mediaIndex,
+                                                'isCover',
+                                                e.target.checked
+                                              )
+                                            }
+                                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                          />
+                                          Photo de couverture
+                                        </label>
+                                      )}
+                                      {heroOptionAvailable && (
+                                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                          <input
+                                            type="checkbox"
+                                            checked={Boolean(mediaItem.isHero)}
+                                            onChange={(e) =>
+                                              handlePhotoMediaChange(
+                                                categoryIndex,
+                                                mediaIndex,
+                                                'isHero',
+                                                e.target.checked
+                                              )
+                                            }
+                                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                          />
+                                          Image héro
+                                        </label>
+                                      )}
                                       <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <input
                                           type="checkbox"
                                           checked={Boolean(mediaItem.hidden)}
-                                          onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'hidden', e.target.checked)}
+                                          onChange={(e) =>
+                                            handlePhotoMediaChange(categoryIndex, mediaIndex, 'hidden', e.target.checked)
+                                          }
                                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         Masquer
@@ -2225,7 +2328,8 @@ export default function PropertyDetailsPage() {
                                     </div>
                                   </div>
                                 </div>
-                              ))
+                                );
+                              })
                             ) : (
                               <p className="text-sm text-gray-500">Aucune photo dans cette catégorie.</p>
                             )}
