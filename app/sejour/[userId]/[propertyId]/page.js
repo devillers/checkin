@@ -433,7 +433,7 @@ export default async function MiniSitePage({ params }) {
                       {category.media.map((media) => (
                         <figure
                           key={media.id || media.url}
-                          className="group overflow-hidden rounded-2xl border border-gray-100 bg-white"
+                          className="group overflow-hidden rounded-sm border border-gray-100 bg-white"
                         >
                           <div className="relative h-56 w-full bg-gray-100">
                             <Image
@@ -444,7 +444,7 @@ export default async function MiniSitePage({ params }) {
                               className="object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           </div>
-                          <figcaption className="px-4 py-3">
+                          {/* <figcaption className="px-4 py-3">
                             {media.alt && (
                               <p className="text-sm font-medium text-gray-900">{media.alt}</p>
                             )}
@@ -456,7 +456,7 @@ export default async function MiniSitePage({ params }) {
                                 Photo mise en avant
                               </p>
                             )}
-                          </figcaption>
+                          </figcaption> */}
                         </figure>
                       ))}
                     </div>
@@ -467,7 +467,7 @@ export default async function MiniSitePage({ params }) {
           </section>
         )}
 
-        <section className="grid gap-4 md:grid-cols-12">
+        {/* <section className="grid gap-4 md:grid-cols-12">
           {gallery.slice(0, 5).map((photo, index) => (
             <div
               key={photo.url || index}
@@ -494,7 +494,7 @@ export default async function MiniSitePage({ params }) {
               />
             </div>
           ))}
-        </section>
+        </section> */}
 
         <section className="grid gap-8 lg:grid-cols-[1.4fr,1fr]">
           <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-soft">
