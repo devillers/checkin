@@ -4,17 +4,26 @@ import Image from 'next/image';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   AlertTriangle,
+  Armchair,
+  Baby,
   Bath,
   Bed,
+  Briefcase,
+  Building2,
+  Car,
   Check,
   ChevronDown,
   ChevronUp,
+  CreditCard,
+  Flame,
+  Flower2,
   Globe,
   GripVertical,
   Home,
   ImageIcon,
   Info,
   Key,
+  Laptop,
   Link2,
   Loader2,
   MapPin,
@@ -25,9 +34,20 @@ import {
   Ruler,
   Save,
   Search,
+  Sparkles,
+  Snowflake,
+  Sun,
+  Sunrise,
   Trash2,
+  Trees,
+  Tv,
   Upload,
   Users,
+  UtensilsCrossed,
+  WashingMachine,
+  Waves,
+  Wifi,
+  Wind,
   X
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -43,30 +63,189 @@ const PROPERTY_TYPES = [
   { value: 'room', label: 'Chambre' }
 ];
 
-const EQUIPMENT_OPTIONS = [
-  'Wifi',
-  'Parking',
-  'Piscine',
-  'Sauna',
-  'Spa',
-  'Cuisine équipée',
-  'Climatisation',
-  'Lave-linge',
-  'Sèche-linge',
-  'Balcon',
-  'Terrasse',
-  'Jardin',
-  'Vue mer',
-  'Cheminée',
-  'Bureau',
-  'Télétravail',
-  'TV',
-  'Netflix',
-  'Lit bébé',
-  'Chaise haute',
-  'Stationnement gratuit',
-  'Stationnement payant'
+const EQUIPMENT_GROUPS = [
+  {
+    key: 'wellness',
+    label: 'Bien-être',
+    options: [
+      {
+        value: 'Sauna',
+        icon: Flame,
+        description: 'Chaleur sèche pour un moment relaxant.',
+        keywords: ['detente', 'chaleur', 'bien-etre']
+      },
+      {
+        value: 'Jacuzzi',
+        icon: Bath,
+        description: 'Bain à remous privatif.',
+        keywords: ['spa', 'bain', 'remous']
+      },
+      {
+        value: 'Spa',
+        icon: Flower2,
+        description: 'Espace bien-être ou massages.',
+        keywords: ['detente', 'soin']
+      },
+      {
+        value: 'Piscine',
+        icon: Waves,
+        description: 'Bassin intérieur ou extérieur.',
+        keywords: ['pool', 'nage']
+      }
+    ]
+  },
+  {
+    key: 'comfort',
+    label: 'Confort & services',
+    options: [
+      {
+        value: 'Wifi',
+        icon: Wifi,
+        description: 'Connexion internet haut débit.',
+        keywords: ['internet', 'fibre']
+      },
+      {
+        value: 'Cuisine équipée',
+        icon: UtensilsCrossed,
+        description: 'Tout le nécessaire pour cuisiner sur place.',
+        keywords: ['cuisine', 'equipement']
+      },
+      {
+        value: 'Climatisation',
+        icon: Snowflake,
+        description: 'Température idéale toute l’année.',
+        keywords: ['clim', 'air conditionne']
+      },
+      {
+        value: 'Cheminée',
+        icon: Flame,
+        description: 'Ambiance chaleureuse au coin du feu.',
+        keywords: ['feu', 'hiver']
+      },
+      {
+        value: 'TV',
+        icon: Tv,
+        description: 'Écran disponible dans le séjour.',
+        keywords: ['television', 'ecran']
+      },
+      {
+        value: 'Netflix',
+        icon: Play,
+        description: 'Accès aux plateformes de streaming.',
+        keywords: ['streaming', 'vod']
+      }
+    ]
+  },
+  {
+    key: 'work',
+    label: 'Télétravail',
+    options: [
+      {
+        value: 'Bureau',
+        icon: Briefcase,
+        description: 'Espace de travail dédié.',
+        keywords: ['desk', 'travail']
+      },
+      {
+        value: 'Télétravail',
+        icon: Laptop,
+        description: 'Installation pensée pour travailler à distance.',
+        keywords: ['remote', 'bureau']
+      }
+    ]
+  },
+  {
+    key: 'family',
+    label: 'Familles',
+    options: [
+      {
+        value: 'Lit bébé',
+        icon: Baby,
+        description: 'Lit parapluie ou berceau disponible.',
+        keywords: ['bebe', 'famille']
+      },
+      {
+        value: 'Chaise haute',
+        icon: Armchair,
+        description: 'Chaise adaptée aux tout-petits.',
+        keywords: ['enfant', 'repas']
+      }
+    ]
+  },
+  {
+    key: 'outdoor',
+    label: 'Extérieur',
+    options: [
+      {
+        value: 'Balcon',
+        icon: Building2,
+        description: 'Espace extérieur attenant.',
+        keywords: ['exterieur']
+      },
+      {
+        value: 'Terrasse',
+        icon: Sun,
+        description: 'Coin détente en plein air.',
+        keywords: ['plein air', 'exterieur']
+      },
+      {
+        value: 'Jardin',
+        icon: Trees,
+        description: 'Espace vert privatif ou partagé.',
+        keywords: ['nature']
+      },
+      {
+        value: 'Vue mer',
+        icon: Sunrise,
+        description: 'Panorama sur l’océan ou le littoral.',
+        keywords: ['ocean', 'vue']
+      }
+    ]
+  },
+  {
+    key: 'practical',
+    label: 'Pratique',
+    options: [
+      {
+        value: 'Parking',
+        icon: Car,
+        description: 'Place de stationnement dédiée.',
+        keywords: ['stationnement', 'garage']
+      },
+      {
+        value: 'Stationnement gratuit',
+        icon: Sparkles,
+        description: 'Stationnement sans frais pour vos voyageurs.',
+        keywords: ['stationnement', 'gratuit']
+      },
+      {
+        value: 'Stationnement payant',
+        icon: CreditCard,
+        description: 'Stationnement disponible avec supplément.',
+        keywords: ['stationnement', 'payant']
+      },
+      {
+        value: 'Lave-linge',
+        icon: WashingMachine,
+        description: 'Machine à laver sur place.',
+        keywords: ['linge', 'lavage']
+      },
+      {
+        value: 'Sèche-linge',
+        icon: Wind,
+        description: 'Système de séchage rapide.',
+        keywords: ['linge', 'sechage']
+      }
+    ]
+  }
 ];
+
+const EQUIPMENT_OPTIONS = EQUIPMENT_GROUPS.flatMap((group) => group.options);
+
+const EQUIPMENT_OPTION_MAP = EQUIPMENT_OPTIONS.reduce((acc, option) => {
+  acc[option.value] = option;
+  return acc;
+}, {});
 
 const DEFAULT_MEDIA_CATEGORIES = [
   { key: 'living', label: 'Séjour' },
@@ -394,6 +573,8 @@ export default function PropertyModal({ property, onClose, onSave }) {
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [geocodeStatus, setGeocodeStatus] = useState('idle');
   const [isSlugManual, setIsSlugManual] = useState(false);
+  const [isEquipmentPickerOpen, setIsEquipmentPickerOpen] = useState(false);
+  const [equipmentSearch, setEquipmentSearch] = useState('');
   const autosaveTimeoutRef = useRef(null);
   const draftKeyRef = useRef('property-draft-new');
 
@@ -426,6 +607,12 @@ export default function PropertyModal({ property, onClose, onSave }) {
       window.removeEventListener('beforeunload', handler);
     };
   }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (!isEquipmentPickerOpen) {
+      setEquipmentSearch('');
+    }
+  }, [isEquipmentPickerOpen]);
 
   const scheduleAutosave = useCallback((nextData) => {
     setHasUnsavedChanges(true);
@@ -507,6 +694,27 @@ export default function PropertyModal({ property, onClose, onSave }) {
       return next;
     });
   }, []);
+
+  const toggleEquipment = useCallback(
+    (value) => {
+      setFormData((prev) => {
+        const exists = prev.operations.equipments.includes(value);
+        const equipments = exists
+          ? prev.operations.equipments.filter((item) => item !== value)
+          : [...prev.operations.equipments, value];
+        const updated = {
+          ...prev,
+          operations: {
+            ...prev.operations,
+            equipments
+          }
+        };
+        scheduleAutosave(updated);
+        return updated;
+      });
+    },
+    [scheduleAutosave]
+  );
 
   const handleCategoryUpload = async (categoryId, files) => {
     if (!files || files.length === 0) {
@@ -1025,6 +1233,61 @@ export default function PropertyModal({ property, onClose, onSave }) {
     }
   };
 
+  const filteredEquipmentGroups = useMemo(() => {
+    const term = equipmentSearch.trim().toLowerCase();
+    if (!term) {
+      return EQUIPMENT_GROUPS;
+    }
+    return EQUIPMENT_GROUPS.map((group) => {
+      const options = group.options.filter((option) => {
+        const searchable = [
+          option.value,
+          option.description || '',
+          ...(option.keywords || [])
+        ]
+          .join(' ')
+          .toLowerCase();
+        return searchable.includes(term);
+      });
+      return {
+        ...group,
+        options
+      };
+    }).filter((group) => group.options.length > 0);
+  }, [equipmentSearch]);
+
+  const renderSelectedEquipmentChips = useCallback(
+    (withRemove = false) =>
+      formData.operations.equipments.map((equipment) => {
+        const option = EQUIPMENT_OPTION_MAP[equipment];
+        const IconComponent = option?.icon || Info;
+        return (
+          <span
+            key={`${equipment}-${withRemove ? 'editable' : 'readonly'}`}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition ${
+              withRemove
+                ? 'border-primary-200 bg-primary-50 text-primary-700 hover:border-primary-300'
+                : 'border-gray-200 bg-gray-50 text-gray-600'
+            }`}
+          >
+            <IconComponent className="h-4 w-4" />
+            <span>{equipment}</span>
+            {withRemove && (
+              <button
+                type="button"
+                onClick={() => toggleEquipment(equipment)}
+                className="rounded-full p-0.5 text-primary-500 transition hover:bg-primary-100 hover:text-primary-700"
+                aria-label={`Retirer ${equipment}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        );
+      }),
+    [formData.operations.equipments, toggleEquipment]
+  );
+
   const { allImages } = useMemo(
     () => flattenMediaCategories(formData.medias.categories),
     [formData.medias.categories]
@@ -1245,6 +1508,36 @@ export default function PropertyModal({ property, onClose, onSave }) {
                         onChange={(event) => updateField('general.surface', event.target.value)}
                         className="form-input"
                       />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-800">Équipements</h4>
+                        <p className="text-xs text-gray-500">
+                          Sélectionnez les services proposés : sauna, jacuzzi, wifi rapide, etc.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEquipmentPickerOpen(true)}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-4 py-2 text-xs font-medium text-primary-700 transition hover:border-primary-300 hover:bg-primary-50"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter un équipement
+                      </button>
+                    </div>
+                    <div className="mt-4">
+                      {formData.operations.equipments.length === 0 ? (
+                        <p className="text-xs text-gray-500">
+                          Aucun équipement sélectionné pour le moment.
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {renderSelectedEquipmentChips(true)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2010,40 +2303,33 @@ export default function PropertyModal({ property, onClose, onSave }) {
                   </div>
 
                   <div className="rounded-lg border border-gray-200 p-4">
-                    <h4 className="mb-3 text-sm font-semibold text-gray-800">Équipements</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {EQUIPMENT_OPTIONS.map((equipment) => {
-                        const selected = formData.operations.equipments.includes(equipment);
-                        return (
-                          <button
-                            key={equipment}
-                            type="button"
-                            onClick={() => {
-                              setFormData((prev) => {
-                                const equipments = selected
-                                  ? prev.operations.equipments.filter((item) => item !== equipment)
-                                  : [...prev.operations.equipments, equipment];
-                                const updated = {
-                                  ...prev,
-                                  operations: {
-                                    ...prev.operations,
-                                    equipments
-                                  }
-                                };
-                                scheduleAutosave(updated);
-                                return updated;
-                              });
-                            }}
-                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition ${
-                              selected
-                                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                                : 'border-gray-200 bg-white text-gray-600 hover:border-primary-300'
-                            }`}
-                          >
-                            {equipment}
-                          </button>
-                        );
-                      })}
+                    <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-800">Équipements</h4>
+                        <p className="text-xs text-gray-500">
+                          Gérez les équipements depuis la section « Informations générales ».
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSection('general');
+                          setIsEquipmentPickerOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Modifier
+                      </button>
+                    </div>
+                    <div className="mt-3">
+                      {formData.operations.equipments.length === 0 ? (
+                        <p className="text-xs text-gray-500">Aucun équipement sélectionné.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {renderSelectedEquipmentChips(false)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2166,6 +2452,120 @@ export default function PropertyModal({ property, onClose, onSave }) {
           </footer>
         </form>
       </div>
+
+      {isEquipmentPickerOpen && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sélection des équipements"
+        >
+          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Sélection des équipements</h3>
+                <p className="text-sm text-gray-500">Recherchez un équipement ou parcourez les catégories.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEquipmentPickerOpen(false)}
+                className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Fermer la sélection des équipements"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={equipmentSearch}
+                  onChange={(event) => setEquipmentSearch(event.target.value)}
+                  placeholder="Rechercher un équipement (sauna, jacuzzi, wifi...)"
+                  className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              {filteredEquipmentGroups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                  <Search className="h-10 w-10 text-gray-300" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Aucun résultat</p>
+                    <p className="text-xs text-gray-500">
+                      Aucun équipement ne correspond à « {equipmentSearch} ».
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Ajoutez les services atypiques dans la description du logement.
+                  </p>
+                </div>
+              ) : (
+                filteredEquipmentGroups.map((group) => (
+                  <div key={group.key} className="mb-8 last:mb-0">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{group.label}</h4>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {group.options.map((option) => {
+                        const selected = formData.operations.equipments.includes(option.value);
+                        const IconComponent = option.icon || Info;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => toggleEquipment(option.value)}
+                            className={`group flex items-start gap-3 rounded-lg border px-3 py-3 text-left transition ${
+                              selected
+                                ? 'border-primary-400 bg-primary-50'
+                                : 'border-gray-200 bg-white hover:border-primary-200 hover:bg-primary-50/40'
+                            }`}
+                          >
+                            <span
+                              className={`mt-0.5 rounded-full border p-2 ${
+                                selected
+                                  ? 'border-primary-300 bg-white text-primary-600'
+                                  : 'border-gray-200 bg-gray-50 text-gray-500 group-hover:border-primary-200 group-hover:text-primary-600'
+                              }`}
+                            >
+                              <IconComponent className="h-4 w-4" />
+                            </span>
+                            <span className="flex-1 text-sm text-gray-700">
+                              <span className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900">{option.value}</span>
+                                {selected && <Check className="h-4 w-4 text-primary-600" />}
+                              </span>
+                              {option.description && (
+                                <span className="mt-1 block text-xs text-gray-500">{option.description}</span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-4 border-t border-gray-200 px-6 py-4">
+              <span className="text-xs text-gray-500">
+                {formData.operations.equipments.length} équipement(s) sélectionné(s) • Modifications enregistrées automatiquement
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEquipmentPickerOpen(false)}
+                className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-primary-700"
+              >
+                <Check className="h-4 w-4" />
+                Terminer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
