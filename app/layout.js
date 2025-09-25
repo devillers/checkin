@@ -69,26 +69,29 @@ export default function RootLayout({ children }) {
         <meta property="og:url" content="https://checkinly.com" />
         <meta property="og:image" content="/icons/icon-512x512.png" />
         
-        <script type="application/ld+json">
-          {`{
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            "name": "Checkinly",
-            "operatingSystem": "Web",
-            "applicationCategory": "BusinessApplication",
-            "description": "Application PWA pour gérer vos inventaires de locations courte durée",
-            "url": "https://checkinly.com",
-            "author": {
-              "@type": "Organization",
-              "name": "Checkinly"
-            },
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "EUR"
-            }
-          }`}
-        </script>
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: `{
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Checkinly",
+              "operatingSystem": "Web",
+              "applicationCategory": "BusinessApplication",
+              "description": "Application PWA pour gérer vos inventaires de locations courte durée",
+              "url": "https://checkinly.com",
+              "author": {
+                "@type": "Organization",
+                "name": "Checkinly"
+              },
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "EUR"
+              }
+            }`
+          }}
+        />
       </head>
       <body className="font-sans antialiased" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
         {children}
