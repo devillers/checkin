@@ -1038,13 +1038,43 @@ export default function PropertyModal({ property, onClose, onSave }) {
     }
   };
 
+
+  const defaultPublicSiteUrl = useMemo(() => {
+    const envUrl =
+      (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://checkinly.com').trim();
+    if (!envUrl) {
+      return 'https://checkinly.com';
+    }
+    return envUrl.replace(/\/$/, '');
+  }, []);
+
+  const [miniSiteBaseUrl, setMiniSiteBaseUrl] = useState(() => `${defaultPublicSiteUrl}/sejour`);
+
+  const miniSiteBaseDisplay = useMemo(() => miniSiteBaseUrl.replace(/^https?:\/\//, ''), [miniSiteBaseUrl]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const origin = window.location.origin?.replace(/\/$/, '');
+    if (origin) {
+      setMiniSiteBaseUrl(`${origin}/sejour`);
+    }
+  }, []);
+
+
   const previewUrl = useMemo(() => {
     const slug = formData.onlinePresence.slug?.trim();
     if (!slug) {
       return '';
     }
+
+    return `${miniSiteBaseUrl}/${slug}`;
+  }, [formData.onlinePresence.slug, miniSiteBaseUrl]);
+
     return `https://checkinly.com/sejour/${slug}`;
   }, [formData.onlinePresence.slug]);
+
 
   const handlePreviewClick = useCallback(() => {
     if (!previewUrl) {
@@ -1680,7 +1710,9 @@ export default function PropertyModal({ property, onClose, onSave }) {
                       </button>
                     </div>
                     {errors['onlinePresence.slug'] && <p className="mt-1 text-xs text-danger-600">{errors['onlinePresence.slug']}</p>}
-                    <p className="mt-1 text-xs text-gray-500">URL finale : checkinly.com/sejour/{formData.onlinePresence.slug || 'slug'}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      URL finale : {miniSiteBaseDisplay}/{formData.onlinePresence.slug || 'slug'}
+                    </p>
                   </div>
                 </div>
               )}
