@@ -297,9 +297,7 @@ export default async function MiniSitePage({ params }) {
               Séjour sélectionné
             </span>
             <h1 className="text-4xl font-semibold leading-tight md:text-5xl">{property.name}</h1>
-            {property.description && (
-              <p className="text-lg text-white/90 md:text-xl">{property.description}</p>
-            )}
+           
             <div className="flex flex-wrap gap-3">
               {highlightCards.map((item) => (
                 <div
@@ -342,11 +340,11 @@ export default async function MiniSitePage({ params }) {
         <section className="grid gap-8 md:grid-cols-[4fr,1fr]">
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-900">Vivez une expérience mémorable</h2>
-            <p className="text-gray-600">
-              Retrouvez l&apos;esprit Airbnb dans une expérience personnalisée : atmosphère soignée, confort hôtelier
-              et conseils d&apos;initiés. Ce mini site se mettra automatiquement à jour lorsque vous connecterez vos
-              calendriers via API ou via un lien iCal.
-            </p>
+            <div className="text-gray-600">
+              {property.description && (
+              <p className="text-lg text-justify w-full">{property.description}</p>
+            )}
+            </div>
             {amenities.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {amenities.map((amenity) => (
