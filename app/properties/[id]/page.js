@@ -41,13 +41,17 @@ export default function PropertyDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const propertyId = params?.id;
+
   const [property, setProperty] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [miniSiteUrl, setMiniSiteUrl] = useState('');
   const [miniSiteDisplayUrl, setMiniSiteDisplayUrl] = useState('');
   const [isMiniSiteCopied, setIsMiniSiteCopied] = useState(false);
+
   const [ownerProfile, setOwnerProfile] = useState(null);
+
   const [isEditingShortDescription, setIsEditingShortDescription] = useState(false);
   const [isEditingLongDescription, setIsEditingLongDescription] = useState(false);
   const [shortDescriptionDraft, setShortDescriptionDraft] = useState('');
@@ -56,6 +60,8 @@ export default function PropertyDetailsPage() {
   const [isSavingLongDescription, setIsSavingLongDescription] = useState(false);
   const [shortDescriptionError, setShortDescriptionError] = useState(null);
   const [longDescriptionError, setLongDescriptionError] = useState(null);
+
+  // blocs d'édition complémentaires
   const [isEditingMainInfo, setIsEditingMainInfo] = useState(false);
   const [mainInfoDraft, setMainInfoDraft] = useState({
     streetNumber: '',
@@ -73,6 +79,7 @@ export default function PropertyDetailsPage() {
   });
   const [isSavingMainInfo, setIsSavingMainInfo] = useState(false);
   const [mainInfoError, setMainInfoError] = useState(null);
+
   const [isEditingQuickSettings, setIsEditingQuickSettings] = useState(false);
   const [quickSettingsDraft, setQuickSettingsDraft] = useState({
     checkInTime: '15:00',
@@ -92,31 +99,23 @@ export default function PropertyDetailsPage() {
   });
   const [isSavingQuickSettings, setIsSavingQuickSettings] = useState(false);
   const [quickSettingsError, setQuickSettingsError] = useState(null);
+
   const [isEditingAmenities, setIsEditingAmenities] = useState(false);
   const [amenitiesDraft, setAmenitiesDraft] = useState('');
   const [isSavingAmenities, setIsSavingAmenities] = useState(false);
   const [amenitiesError, setAmenitiesError] = useState(null);
+
   const [isEditingPhotos, setIsEditingPhotos] = useState(false);
   const [photosDraft, setPhotosDraft] = useState([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [photosError, setPhotosError] = useState(null);
 
   const formattedAddress = useMemo(() => {
-    if (!property) {
-      return '';
-    }
+    if (!property) return '';
 
-    if (typeof property.address === 'string') {
-      return property.address;
-    }
-
-    if (property.formattedAddress) {
-      return property.formattedAddress;
-    }
-
-    if (property.address?.formatted) {
-      return property.address.formatted;
-    }
+    if (typeof property.address === 'string') return property.address;
+    if (property.formattedAddress) return property.formattedAddress;
+    if (property.address?.formatted) return property.address.formatted;
 
     if (property.address && typeof property.address === 'object') {
       const { streetNumber, street, complement, postalCode, city, country } = property.address;
@@ -125,18 +124,18 @@ export default function PropertyDetailsPage() {
         complement,
         [postalCode, city].filter(Boolean).join(' '),
         country
-      ].filter(Boolean).join(', ');
+      ]
+        .filter(Boolean)
+        .join(', ');
     }
 
     return '';
   }, [property]);
 
   const operations = property?.operations || {};
-  const depositText = useMemo(() => {
-    if (!property) {
-      return 'Non défini';
-    }
 
+  const depositText = useMemo(() => {
+    if (!property) return 'Non défini';
     const deposit = operations.deposit || {};
 
     if (deposit.type === 'range') {
@@ -161,25 +160,16 @@ export default function PropertyDetailsPage() {
 
   const checkInTime = operations.checkInTime || property?.settings?.checkInTime || 'Non défini';
   const checkOutTime = operations.checkOutTime || property?.settings?.checkOutTime || 'Non défini';
-  const checkInModeLabel = operations.checkInMode === 'self'
-    ? 'Autonome'
-    : operations.checkInMode === 'in_person'
-      ? 'En personne'
-      : null;
-  const checkOutModeLabel = operations.checkOutMode === 'self'
-    ? 'Autonome'
-    : operations.checkOutMode === 'in_person'
-      ? 'En personne'
-      : null;
+  const checkInModeLabel =
+    operations.checkInMode === 'self' ? 'Autonome' : operations.checkInMode === 'in_person' ? 'En personne' : null;
+  const checkOutModeLabel =
+    operations.checkOutMode === 'self' ? 'Autonome' : operations.checkOutMode === 'in_person' ? 'En personne' : null;
 
   useEffect(() => {
     const fetchProperty = async () => {
-      if (!propertyId) {
-        return;
-      }
+      if (!propertyId) return;
 
       const token = localStorage.getItem('auth-token');
-
       if (!token) {
         router.replace('/auth/login');
         return;
@@ -188,11 +178,8 @@ export default function PropertyDetailsPage() {
       const fetchOwner = async () => {
         try {
           const response = await fetch('/api/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+            headers: { Authorization: `Bearer ${token}` }
           });
-
           if (response.ok) {
             const data = await response.json();
             setOwnerProfile(data);
@@ -207,9 +194,7 @@ export default function PropertyDetailsPage() {
         setError(null);
 
         const response = await fetch(`/api/properties/${propertyId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.status === 401) {
@@ -218,9 +203,7 @@ export default function PropertyDetailsPage() {
         }
 
         if (!response.ok) {
-          const message = response.status === 404
-            ? 'Propriété introuvable'
-            : 'Impossible de charger la propriété';
+          const message = response.status === 404 ? 'Propriété introuvable' : 'Impossible de charger la propriété';
           setError(message);
           return;
         }
@@ -244,7 +227,10 @@ export default function PropertyDetailsPage() {
       const originUrl = `${window.location.origin}/sejour/${property.userId}/${property.id}`;
       setMiniSiteUrl(originUrl);
 
-      const publicBaseUrl = (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL || 'https://sejour.checkinly.fr').replace(/\/$/, '');
+      const publicBaseUrl = (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL || 'https://sejour.checkinly.fr').replace(
+        /\/$/,
+        ''
+      );
       const slug = property.onlinePresence?.slug || property.slug;
       if (slug) {
         setMiniSiteDisplayUrl(`${publicBaseUrl}/${slug}`);
@@ -254,39 +240,30 @@ export default function PropertyDetailsPage() {
     }
   }, [property]);
 
+  // Pré-remplissages des drafts quand la propriété change ou qu'on quitte un mode édition
   useEffect(() => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
-    const shortValue = property.shortDescription
-      || property.general?.shortDescription
-      || property.description
-      || '';
-    const longValue = property.description
-      || property.general?.longDescription
-      || '';
+    const shortValue = property.shortDescription || property.general?.shortDescription || property.description || '';
+    const longValue = property.description || property.general?.longDescription || '';
 
-    if (!isEditingShortDescription) {
-      setShortDescriptionDraft(shortValue);
-    }
-
-    if (!isEditingLongDescription) {
-      setLongDescriptionDraft(longValue);
-    }
+    if (!isEditingShortDescription) setShortDescriptionDraft(shortValue);
+    if (!isEditingLongDescription) setLongDescriptionDraft(longValue);
 
     if (!isEditingMainInfo) {
-      const baseAddress = typeof property.address === 'object' && property.address !== null
-        ? property.address
-        : {
-            streetNumber: '',
-            street: property.formattedAddress || '',
-            complement: '',
-            postalCode: '',
-            city: '',
-            country: 'France',
-            formatted: property.formattedAddress || ''
-          };
+      const baseAddress =
+        typeof property.address === 'object' && property.address !== null
+          ? property.address
+          : {
+              streetNumber: '',
+              street: property.formattedAddress || '',
+              complement: '',
+              postalCode: '',
+              city: '',
+              country: 'France',
+              formatted: property.formattedAddress || ''
+            };
+
       const baseCapacity = property.general?.capacity || property.capacity || {};
       const adultsValue = Number(baseCapacity.adults ?? property.maxGuests ?? 1);
       const childrenValue = Number(baseCapacity.children ?? 0);
@@ -314,11 +291,9 @@ export default function PropertyDetailsPage() {
       const operationsData = property.operations || {};
       const settingsData = property.settings || {};
       const depositData = operationsData.deposit || {};
-      const activeDepositType = depositData.type && depositData.type !== 'none'
-        ? depositData.type
-        : settingsData.requireDeposit
-          ? 'fixed'
-          : 'none';
+
+      const activeDepositType =
+        depositData.type && depositData.type !== 'none' ? depositData.type : settingsData.requireDeposit ? 'fixed' : 'none';
 
       setQuickSettingsDraft({
         checkInTime: operationsData.checkInTime || settingsData.checkInTime || '15:00',
@@ -327,9 +302,10 @@ export default function PropertyDetailsPage() {
         checkOutMode: operationsData.checkOutMode || 'in_person',
         accessCode: settingsData.accessCode || '',
         depositType: activeDepositType,
-        depositAmount: depositData.amount != null
-          ? String(depositData.amount)
-          : settingsData.depositAmount != null
+        depositAmount:
+          depositData.amount != null
+            ? String(depositData.amount)
+            : settingsData.depositAmount != null
             ? String(settingsData.depositAmount)
             : '',
         depositMin: depositData.min != null ? String(depositData.min) : '',
@@ -346,8 +322,8 @@ export default function PropertyDetailsPage() {
       const equipments = Array.isArray(property.amenities)
         ? property.amenities
         : Array.isArray(property.operations?.equipments)
-          ? property.operations.equipments
-          : [];
+        ? property.operations.equipments
+        : [];
       setAmenitiesDraft(equipments.join('\n'));
     }
 
@@ -355,9 +331,7 @@ export default function PropertyDetailsPage() {
       const categories = Array.isArray(property.medias?.categories)
         ? property.medias.categories.map((category) => ({
             ...category,
-            media: Array.isArray(category.media)
-              ? category.media.map((item) => ({ ...item }))
-              : []
+            media: Array.isArray(category.media) ? category.media.map((item) => ({ ...item })) : []
           }))
         : [];
       setPhotosDraft(categories);
@@ -372,263 +346,202 @@ export default function PropertyDetailsPage() {
     isEditingPhotos
   ]);
 
-  const buildUpdatePayload = useCallback((overrides = {}) => {
-    if (!property) {
-      return null;
-    }
+  const buildUpdatePayload = useCallback(
+    (overrides = {}) => {
+      if (!property) return null;
 
-    const ensureNumber = (value, fallback) => {
-      const parsed = Number.parseFloat(value);
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-      return fallback;
-    };
-
-    const baseGeneral = property.general || {};
-    const baseCapacity = baseGeneral.capacity || property.capacity || {};
-    const baseShort = baseGeneral.shortDescription ?? property.shortDescription ?? '';
-    const baseLong = baseGeneral.longDescription ?? property.description ?? '';
-
-    const capacityAdults = ensureNumber(
-      overrides.general?.capacity?.adults
-        ?? baseCapacity.adults
-        ?? property.maxGuests
-        ?? 1,
-      1
-    );
-    const capacityChildren = ensureNumber(
-      overrides.general?.capacity?.children
-        ?? baseCapacity.children
-        ?? 0,
-      0
-    );
-
-    const bedrooms = ensureNumber(
-      overrides.general?.bedrooms
-        ?? baseGeneral.bedrooms
-        ?? property.bedrooms
-        ?? 0,
-      0
-    );
-    const beds = ensureNumber(
-      overrides.general?.beds
-        ?? baseGeneral.beds
-        ?? property.beds
-        ?? baseGeneral.bedrooms
-        ?? property.bedrooms
-        ?? 0,
-      0
-    );
-    const bathrooms = ensureNumber(
-      overrides.general?.bathrooms
-        ?? baseGeneral.bathrooms
-        ?? property.bathrooms
-        ?? 0,
-      0
-    );
-
-    const generalOverrides = overrides.general || {};
-    const general = {
-      name: generalOverrides.name ?? baseGeneral.name ?? property.name ?? '',
-      type: generalOverrides.type ?? baseGeneral.type ?? property.type ?? 'apartment',
-      capacity: {
-        adults: capacityAdults,
-        children: capacityChildren
-      },
-      bedrooms,
-      beds,
-      bathrooms,
-      surface: generalOverrides.surface ?? baseGeneral.surface ?? property.surface ?? null,
-      shortDescription: (generalOverrides.shortDescription ?? baseShort)?.trim?.() ?? '',
-      longDescription: (generalOverrides.longDescription ?? baseLong)?.trim?.() ?? ''
-    };
-
-    let address;
-    if (typeof property.address === 'object' && property.address !== null) {
-      address = {
-        streetNumber: property.address.streetNumber ?? '',
-        street: property.address.street ?? '',
-        complement: property.address.complement ?? '',
-        postalCode: property.address.postalCode ?? '',
-        city: property.address.city ?? '',
-        country: property.address.country ?? 'France',
-        latitude: property.address.latitude ?? null,
-        longitude: property.address.longitude ?? null,
-        formatted: property.address.formatted ?? property.formattedAddress ?? ''
-      };
-    } else {
-      address = {
-        streetNumber: '',
-        street: property.formattedAddress || '',
-        complement: '',
-        postalCode: '',
-        city: '',
-        country: 'France',
-        latitude: null,
-        longitude: null,
-        formatted: property.formattedAddress || ''
-      };
-    }
-
-    const addressOverrides = overrides.address || {};
-    address = { ...address, ...addressOverrides };
-
-    const onlinePresence = {
-      airbnbUrl: property.onlinePresence?.airbnbUrl ?? property.airbnbUrl ?? '',
-      bookingUrl: property.onlinePresence?.bookingUrl ?? property.bookingUrl ?? '',
-      slug: property.onlinePresence?.slug ?? property.slug ?? ''
-    };
-
-    const mediasCategories = Array.isArray(property.medias?.categories)
-      ? property.medias.categories.map((category) => ({
-        ...category,
-        media: Array.isArray(category.media)
-          ? category.media.map((item) => ({ ...item }))
-          : []
-      }))
-      : [];
-
-    const operationsBase = property.operations
-      ? {
-        ...property.operations,
-        deposit: property.operations.deposit
-          ? { ...property.operations.deposit }
-          : undefined,
-        cityTax: property.operations.cityTax
-          ? { ...property.operations.cityTax }
-          : undefined,
-        equipments: Array.isArray(property.operations.equipments)
-          ? [...property.operations.equipments]
-          : undefined
-      }
-      : {};
-
-    if (!operationsBase.deposit) {
-      delete operationsBase.deposit;
-    }
-    if (!operationsBase.cityTax) {
-      delete operationsBase.cityTax;
-    }
-    if (!operationsBase.equipments) {
-      delete operationsBase.equipments;
-    }
-
-    const operationsOverrides = overrides.operations || {};
-    let operations = { ...operationsBase, ...operationsOverrides };
-
-    if (operationsOverrides.deposit === null) {
-      delete operations.deposit;
-    } else if (operationsOverrides.deposit) {
-      operations = {
-        ...operations,
-        deposit: {
-          ...(operationsBase.deposit || {}),
-          ...operationsOverrides.deposit
-        }
-      };
-    }
-
-    if (operationsOverrides.cityTax === null) {
-      delete operations.cityTax;
-    }
-
-    if (operationsOverrides.equipments) {
-      operations = {
-        ...operations,
-        equipments: Array.isArray(operationsOverrides.equipments)
-          ? operationsOverrides.equipments
-          : []
-      };
-    }
-
-    const baseSettings = property.settings
-      ? { ...property.settings }
-      : {
-        autoCheckIn: true,
-        requireDeposit: false,
-        depositAmount: 0,
-        cleaningFee: 0,
-        accessCode: '',
-        checkInTime: '15:00',
-        checkOutTime: '11:00'
+      const ensureNumber = (value, fallback) => {
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
       };
 
-    const settingsOverrides = overrides.settings || {};
-    const normalizedSettings = {
-      ...baseSettings,
-      ...settingsOverrides,
-      autoCheckIn: Boolean(settingsOverrides.autoCheckIn ?? baseSettings.autoCheckIn),
-      requireDeposit: Boolean(settingsOverrides.requireDeposit ?? baseSettings.requireDeposit),
-      depositAmount: ensureNumber(
-        settingsOverrides.depositAmount ?? baseSettings.depositAmount ?? 0,
+      const baseGeneral = property.general || {};
+      const baseCapacity = baseGeneral.capacity || property.capacity || {};
+      const baseShort = baseGeneral.shortDescription ?? property.shortDescription ?? '';
+      const baseLong = baseGeneral.longDescription ?? property.description ?? '';
+
+      const capacityAdults = ensureNumber(
+        overrides.general?.capacity?.adults ?? baseCapacity.adults ?? property.maxGuests ?? 1,
+        1
+      );
+      const capacityChildren = ensureNumber(overrides.general?.capacity?.children ?? baseCapacity.children ?? 0, 0);
+
+      const bedrooms = ensureNumber(overrides.general?.bedrooms ?? baseGeneral.bedrooms ?? property.bedrooms ?? 0, 0);
+      const beds = ensureNumber(
+        overrides.general?.beds ?? baseGeneral.beds ?? property.beds ?? baseGeneral.bedrooms ?? property.bedrooms ?? 0,
         0
-      ),
-      cleaningFee: ensureNumber(
-        settingsOverrides.cleaningFee ?? baseSettings.cleaningFee ?? 0,
+      );
+      const bathrooms = ensureNumber(
+        overrides.general?.bathrooms ?? baseGeneral.bathrooms ?? property.bathrooms ?? 0,
         0
-      )
-    };
+      );
 
-    if (!normalizedSettings.requireDeposit) {
-      normalizedSettings.depositAmount = 0;
-    }
+      const generalOverrides = overrides.general || {};
+      const general = {
+        name: generalOverrides.name ?? baseGeneral.name ?? property.name ?? '',
+        type: generalOverrides.type ?? baseGeneral.type ?? property.type ?? 'apartment',
+        capacity: { adults: capacityAdults, children: capacityChildren },
+        bedrooms,
+        beds,
+        bathrooms,
+        surface: generalOverrides.surface ?? baseGeneral.surface ?? property.surface ?? null,
+        shortDescription: (generalOverrides.shortDescription ?? baseShort)?.trim?.() ?? '',
+        longDescription: (generalOverrides.longDescription ?? baseLong)?.trim?.() ?? ''
+      };
 
-    const baseAmenities = Array.isArray(property.amenities)
-      ? [...property.amenities]
-      : Array.isArray(property.operations?.equipments)
+      let address;
+      if (typeof property.address === 'object' && property.address !== null) {
+        address = {
+          streetNumber: property.address.streetNumber ?? '',
+          street: property.address.street ?? '',
+          complement: property.address.complement ?? '',
+          postalCode: property.address.postalCode ?? '',
+          city: property.address.city ?? '',
+          country: property.address.country ?? 'France',
+          latitude: property.address.latitude ?? null,
+          longitude: property.address.longitude ?? null,
+          formatted: property.address.formatted ?? property.formattedAddress ?? ''
+        };
+      } else {
+        address = {
+          streetNumber: '',
+          street: property.formattedAddress || '',
+          complement: '',
+          postalCode: '',
+          city: '',
+          country: 'France',
+          latitude: null,
+          longitude: null,
+          formatted: property.formattedAddress || ''
+        };
+      }
+      address = { ...address, ...(overrides.address || {}) };
+
+      const onlinePresence = {
+        airbnbUrl: property.onlinePresence?.airbnbUrl ?? property.airbnbUrl ?? '',
+        bookingUrl: property.onlinePresence?.bookingUrl ?? property.bookingUrl ?? '',
+        slug: property.onlinePresence?.slug ?? property.slug ?? '',
+        ...(overrides.onlinePresence || {})
+      };
+
+      const mediasCategories = Array.isArray(property.medias?.categories)
+        ? property.medias.categories.map((category) => ({
+            ...category,
+            media: Array.isArray(category.media) ? category.media.map((item) => ({ ...item })) : []
+          }))
+        : [];
+
+      // Normalisation des operations/settings
+      const operationsBase = property.operations
+        ? {
+            ...property.operations,
+            deposit: property.operations.deposit ? { ...property.operations.deposit } : undefined,
+            cityTax: property.operations.cityTax ? { ...property.operations.cityTax } : undefined,
+            equipments: Array.isArray(property.operations.equipments) ? [...property.operations.equipments] : undefined
+          }
+        : {};
+
+      if (!operationsBase.deposit) delete operationsBase.deposit;
+      if (!operationsBase.cityTax) delete operationsBase.cityTax;
+      if (!operationsBase.equipments) delete operationsBase.equipments;
+
+      const operationsOverrides = overrides.operations || {};
+      let operationsNormalized = { ...operationsBase, ...operationsOverrides };
+
+      if (operationsOverrides.deposit === null) {
+        delete operationsNormalized.deposit;
+      } else if (operationsOverrides.deposit) {
+        operationsNormalized = {
+          ...operationsNormalized,
+          deposit: {
+            ...(operationsBase.deposit || {}),
+            ...operationsOverrides.deposit
+          }
+        };
+      }
+
+      if (operationsOverrides.cityTax === null) {
+        delete operationsNormalized.cityTax;
+      }
+
+      if (operationsOverrides.equipments) {
+        operationsNormalized = {
+          ...operationsNormalized,
+          equipments: Array.isArray(operationsOverrides.equipments) ? operationsOverrides.equipments : []
+        };
+      }
+
+      const baseSettings = property.settings
+        ? { ...property.settings }
+        : {
+            autoCheckIn: true,
+            requireDeposit: false,
+            depositAmount: 0,
+            cleaningFee: 0,
+            accessCode: '',
+            checkInTime: '15:00',
+            checkOutTime: '11:00'
+          };
+
+      const settingsOverrides = overrides.settings || {};
+      const normalizedSettings = {
+        ...baseSettings,
+        ...settingsOverrides,
+        autoCheckIn: Boolean(settingsOverrides.autoCheckIn ?? baseSettings.autoCheckIn),
+        requireDeposit: Boolean(settingsOverrides.requireDeposit ?? baseSettings.requireDeposit),
+        depositAmount: ensureNumber(settingsOverrides.depositAmount ?? baseSettings.depositAmount ?? 0, 0),
+        cleaningFee: ensureNumber(settingsOverrides.cleaningFee ?? baseSettings.cleaningFee ?? 0, 0)
+      };
+      if (!normalizedSettings.requireDeposit) normalizedSettings.depositAmount = 0;
+
+      const baseAmenities = Array.isArray(property.amenities)
+        ? [...property.amenities]
+        : Array.isArray(property.operations?.equipments)
         ? [...property.operations.equipments]
         : [];
-    const amenities = Array.isArray(overrides.amenities)
-      ? overrides.amenities
-      : baseAmenities;
+      const amenities = Array.isArray(overrides.amenities) ? overrides.amenities : baseAmenities;
 
-    const seo = {
-      metaTitle: property.seo?.metaTitle ?? '',
-      metaDescription: property.seo?.metaDescription ?? '',
-      ogImageId: property.seo?.ogImageId ?? ''
-    };
+      const seo = {
+        metaTitle: property.seo?.metaTitle ?? '',
+        metaDescription: property.seo?.metaDescription ?? '',
+        ogImageId: property.seo?.ogImageId ?? '',
+        ...(overrides.seo || {})
+      };
 
-    return {
-      general,
-      address,
-      onlinePresence: { ...onlinePresence, ...(overrides.onlinePresence || {}) },
-      medias: { categories: overrides.medias?.categories ?? mediasCategories },
-      operations,
-      settings: normalizedSettings,
-      amenities,
-      seo: { ...seo, ...(overrides.seo || {}) }
-    };
-  }, [property]);
+      return {
+        general,
+        address,
+        onlinePresence,
+        medias: { categories: overrides.medias?.categories ?? mediasCategories },
+        operations: operationsNormalized,
+        settings: normalizedSettings,
+        amenities,
+        seo
+      };
+    },
+    [property]
+  );
 
   const heroPhoto = useMemo(() => {
-    if (!property) {
-      return null;
-    }
+    if (!property) return null;
 
-    if (property.profilePhoto?.url) {
-      return property.profilePhoto;
-    }
+    if (property.profilePhoto?.url) return property.profilePhoto;
 
     if (Array.isArray(property.descriptionPhotos)) {
       const heroInDescription = property.descriptionPhotos.find((photo) => photo?.isHero && photo?.url);
-      if (heroInDescription) {
-        return heroInDescription;
-      }
+      if (heroInDescription) return heroInDescription;
 
       const firstDescriptionPhoto = property.descriptionPhotos.find((photo) => photo?.url);
-      if (firstDescriptionPhoto) {
-        return firstDescriptionPhoto;
-      }
+      if (firstDescriptionPhoto) return firstDescriptionPhoto;
     }
 
     const categoryList = Array.isArray(property.medias?.categories) ? property.medias.categories : [];
-    const firstCategoryWithMedia = categoryList.find((category) => Array.isArray(category.media) && category.media.some((media) => media?.url));
+    const firstCategoryWithMedia = categoryList.find(
+      (category) => Array.isArray(category.media) && category.media.some((m) => m?.url)
+    );
     if (firstCategoryWithMedia) {
-      const firstVisibleMedia = firstCategoryWithMedia.media.find((media) => media?.url && !media.hidden);
-      if (firstVisibleMedia) {
-        return firstVisibleMedia;
-      }
+      const firstVisibleMedia = firstCategoryWithMedia.media.find((m) => m?.url && !m.hidden);
+      if (firstVisibleMedia) return firstVisibleMedia;
     }
 
     return null;
@@ -636,81 +549,41 @@ export default function PropertyDetailsPage() {
 
   const sortedCategories = useMemo(() => {
     const categoryList = Array.isArray(property?.medias?.categories) ? property.medias.categories : [];
-
-    if (!Array.isArray(categoryList)) {
-      return [];
-    }
+    if (!Array.isArray(categoryList)) return [];
 
     return [...categoryList]
       .map((category) => ({
         ...category,
-        media: Array.isArray(category.media)
-          ? [...category.media].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
-          : []
+        media: Array.isArray(category.media) ? [...category.media].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0)) : []
       }))
       .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
   }, [property]);
 
   const ownerName = useMemo(() => {
-    if (!ownerProfile) {
-      return '';
-    }
-
+    if (!ownerProfile) return '';
     const parts = [ownerProfile.firstName, ownerProfile.lastName].filter(Boolean);
     return parts.length > 0 ? parts.join(' ') : ownerProfile.email;
   }, [ownerProfile]);
 
   const ownerInitials = useMemo(() => {
-    if (!ownerProfile) {
-      return '';
-    }
-
+    if (!ownerProfile) return '';
     const initialsSource = ownerProfile.firstName || ownerProfile.lastName || ownerProfile.email || '';
-    if (!initialsSource) {
-      return '';
-    }
-
+    if (!initialsSource) return '';
     const matches = initialsSource
       .split(/\s+/)
       .filter(Boolean)
       .map((segment) => segment.charAt(0).toUpperCase());
-
-    if (matches.length >= 2) {
-      return `${matches[0]}${matches[1]}`;
-    }
-
-    return matches[0] || initialsSource.charAt(0).toUpperCase();
+    return matches.length >= 2 ? `${matches[0]}${matches[1]}` : matches[0] || initialsSource.charAt(0).toUpperCase();
   }, [ownerProfile]);
 
-  const handleGoBack = () => {
-    router.push('/properties');
-  };
-
-  const handleOpenSettings = () => {
-    if (property?.id) {
-      router.push(`/properties/${property.id}/settings`);
-    }
-  };
-
-  const handleOpenCalendar = () => {
-    if (property?.id) {
-      router.push(`/dashboard/calendrier?property=${property.id}`);
-    }
-  };
-
-  const handlePublish = () => {
-    if (miniSiteUrl) {
-      window.open(miniSiteUrl, '_blank', 'noopener,noreferrer');
-    }
-  };
+  const handleGoBack = () => router.push('/properties');
+  const handleOpenSettings = () => property?.id && router.push(`/properties/${property.id}/settings`);
+  const handleOpenCalendar = () => property?.id && router.push(`/dashboard/calendrier?property=${property.id}`);
+  const handlePublish = () => miniSiteUrl && window.open(miniSiteUrl, '_blank', 'noopener,noreferrer');
 
   const handleCopyMiniSiteUrl = async () => {
     const urlToCopy = miniSiteDisplayUrl || miniSiteUrl;
-
-    if (!urlToCopy || typeof navigator === 'undefined' || !navigator?.clipboard?.writeText) {
-      return;
-    }
-
+    if (!urlToCopy || typeof navigator === 'undefined' || !navigator?.clipboard?.writeText) return;
     try {
       await navigator.clipboard.writeText(urlToCopy);
       setIsMiniSiteCopied(true);
@@ -722,16 +595,10 @@ export default function PropertyDetailsPage() {
 
   const displayMiniSiteUrl = miniSiteDisplayUrl || miniSiteUrl;
 
+  // --- Short description
   const handleStartShortDescriptionEdit = () => {
-    if (!property) {
-      return;
-    }
-    setShortDescriptionDraft(
-      property.shortDescription
-        || property.general?.shortDescription
-        || property.description
-        || ''
-    );
+    if (!property) return;
+    setShortDescriptionDraft(property.shortDescription || property.general?.shortDescription || property.description || '');
     setShortDescriptionError(null);
     setIsEditingShortDescription(true);
   };
@@ -741,35 +608,25 @@ export default function PropertyDetailsPage() {
       setIsEditingShortDescription(false);
       return;
     }
-    setShortDescriptionDraft(
-      property.shortDescription
-        || property.general?.shortDescription
-        || property.description
-        || ''
-    );
+    setShortDescriptionDraft(property.shortDescription || property.general?.shortDescription || property.description || '');
     setShortDescriptionError(null);
     setIsEditingShortDescription(false);
   };
 
   const handleSaveShortDescription = async () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
     const trimmed = shortDescriptionDraft.trim();
-
     if (!trimmed) {
       setShortDescriptionError('La description courte est obligatoire.');
       return;
     }
-
     if (trimmed.length > 160) {
       setShortDescriptionError('La description courte doit contenir 160 caractères maximum.');
       return;
     }
 
     const token = localStorage.getItem('auth-token');
-
     if (!token) {
       router.replace('/auth/login');
       return;
@@ -782,22 +639,14 @@ export default function PropertyDetailsPage() {
       const payload = buildUpdatePayload({
         general: {
           shortDescription: trimmed,
-          longDescription: property.general?.longDescription
-            ?? property.description
-            ?? ''
+          longDescription: property.general?.longDescription ?? property.description ?? ''
         }
       });
-
-      if (!payload) {
-        throw new Error('Impossible de préparer la mise à jour.');
-      }
+      if (!payload) throw new Error('Impossible de préparer la mise à jour.');
 
       const response = await fetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -805,7 +654,6 @@ export default function PropertyDetailsPage() {
         router.replace('/auth/login');
         return;
       }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData?.message || 'Impossible de sauvegarder la description courte');
@@ -813,34 +661,21 @@ export default function PropertyDetailsPage() {
 
       const updated = await response.json();
       setProperty(updated);
-      setShortDescriptionDraft(
-        updated.shortDescription
-          || updated.general?.shortDescription
-          || trimmed
-      );
-      setLongDescriptionDraft(
-        updated.description
-          || updated.general?.longDescription
-          || longDescriptionDraft
-      );
+      setShortDescriptionDraft(updated.shortDescription || updated.general?.shortDescription || trimmed);
+      setLongDescriptionDraft(updated.description || updated.general?.longDescription || longDescriptionDraft);
       setIsEditingShortDescription(false);
-    } catch (error) {
-      console.error('Error saving short description:', error);
-      setShortDescriptionError(error.message || 'Impossible de sauvegarder la description courte');
+    } catch (e) {
+      console.error('Error saving short description:', e);
+      setShortDescriptionError(e.message || 'Impossible de sauvegarder la description courte');
     } finally {
       setIsSavingShortDescription(false);
     }
   };
 
+  // --- Long description
   const handleStartLongDescriptionEdit = () => {
-    if (!property) {
-      return;
-    }
-    setLongDescriptionDraft(
-      property.description
-        || property.general?.longDescription
-        || ''
-    );
+    if (!property) return;
+    setLongDescriptionDraft(property.description || property.general?.longDescription || '');
     setLongDescriptionError(null);
     setIsEditingLongDescription(true);
   };
@@ -850,27 +685,18 @@ export default function PropertyDetailsPage() {
       setIsEditingLongDescription(false);
       return;
     }
-    setLongDescriptionDraft(
-      property.description
-        || property.general?.longDescription
-        || ''
-    );
+    setLongDescriptionDraft(property.description || property.general?.longDescription || '');
     setLongDescriptionError(null);
     setIsEditingLongDescription(false);
   };
 
   const handleSaveLongDescription = async () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
     const trimmed = longDescriptionDraft.trim();
-    const currentShort = property.shortDescription
-      || property.general?.shortDescription
-      || '';
+    const currentShort = property.shortDescription || property.general?.shortDescription || '';
 
     const token = localStorage.getItem('auth-token');
-
     if (!token) {
       router.replace('/auth/login');
       return;
@@ -886,17 +712,11 @@ export default function PropertyDetailsPage() {
           longDescription: trimmed
         }
       });
-
-      if (!payload) {
-        throw new Error('Impossible de préparer la mise à jour.');
-      }
+      if (!payload) throw new Error('Impossible de préparer la mise à jour.');
 
       const response = await fetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -904,7 +724,6 @@ export default function PropertyDetailsPage() {
         router.replace('/auth/login');
         return;
       }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData?.message || 'Impossible de sauvegarder la description longue');
@@ -912,66 +731,43 @@ export default function PropertyDetailsPage() {
 
       const updated = await response.json();
       setProperty(updated);
-      setLongDescriptionDraft(
-        updated.description
-          || updated.general?.longDescription
-          || trimmed
-      );
-      setShortDescriptionDraft(
-        updated.shortDescription
-          || updated.general?.shortDescription
-          || shortDescriptionDraft
-      );
+      setLongDescriptionDraft(updated.description || updated.general?.longDescription || trimmed);
+      setShortDescriptionDraft(updated.shortDescription || updated.general?.shortDescription || shortDescriptionDraft);
       setIsEditingLongDescription(false);
-    } catch (error) {
-      console.error('Error saving long description:', error);
-      setLongDescriptionError(error.message || 'Impossible de sauvegarder la description longue');
+    } catch (e) {
+      console.error('Error saving long description:', e);
+      setLongDescriptionError(e.message || 'Impossible de sauvegarder la description longue');
     } finally {
       setIsSavingLongDescription(false);
     }
   };
 
+  // --- Main info (adresse/capacité)
   const handleStartMainInfoEdit = () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
     setMainInfoError(null);
     setIsEditingMainInfo(true);
   };
-
   const handleCancelMainInfoEdit = () => {
     setIsEditingMainInfo(false);
     setMainInfoError(null);
   };
-
   const handleMainInfoChange = (field, value) => {
-    setMainInfoDraft((previous) => ({
-      ...previous,
-      [field]: value
-    }));
+    setMainInfoDraft((prev) => ({ ...prev, [field]: value }));
   };
-
   const handleSaveMainInfo = async () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
     const token = localStorage.getItem('auth-token');
-
     if (!token) {
       router.replace('/auth/login');
       return;
     }
 
     const parseInteger = (value, { fallback = 0, min = 0 } = {}) => {
-      if (typeof value === 'number') {
-        return Number.isFinite(value) ? Math.max(value, min) : fallback;
-      }
+      if (typeof value === 'number') return Number.isFinite(value) ? Math.max(value, min) : fallback;
       const parsed = Number.parseInt(String(value).trim(), 10);
-      if (Number.isFinite(parsed)) {
-        return Math.max(parsed, min);
-      }
-      return fallback;
+      return Number.isFinite(parsed) ? Math.max(parsed, min) : fallback;
     };
 
     const adults = parseInteger(mainInfoDraft.adults, { fallback: 1, min: 1 });
@@ -995,33 +791,26 @@ export default function PropertyDetailsPage() {
       postalCode: mainInfoDraft.postalCode?.trim?.() ?? '',
       city: mainInfoDraft.city?.trim?.() ?? '',
       country: mainInfoDraft.country?.trim?.() || 'France',
-      formatted: mainInfoDraft.formatted?.trim?.() || `${mainInfoDraft.streetNumber ? `${mainInfoDraft.streetNumber} ` : ''}${mainInfoDraft.street || ''}`.trim()
+      formatted:
+        mainInfoDraft.formatted?.trim?.() ||
+        `${mainInfoDraft.streetNumber ? `${mainInfoDraft.streetNumber} ` : ''}${mainInfoDraft.street || ''}`.trim()
     };
 
     try {
       const payload = buildUpdatePayload({
         general: {
-          capacity: {
-            adults,
-            children
-          },
+          capacity: { adults, children },
           bedrooms,
           beds,
           bathrooms
         },
         address: addressOverride
       });
-
-      if (!payload) {
-        throw new Error('Impossible de préparer la mise à jour.');
-      }
+      if (!payload) throw new Error('Impossible de préparer la mise à jour.');
 
       const response = await fetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -1029,7 +818,6 @@ export default function PropertyDetailsPage() {
         router.replace('/auth/login');
         return;
       }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData?.message || 'Impossible de sauvegarder les informations principales');
@@ -1038,55 +826,40 @@ export default function PropertyDetailsPage() {
       const updated = await response.json();
       setProperty(updated);
       setIsEditingMainInfo(false);
-    } catch (error) {
-      console.error('Error saving main information:', error);
-      setMainInfoError(error.message || 'Impossible de sauvegarder les informations principales');
+    } catch (e) {
+      console.error('Error saving main information:', e);
+      setMainInfoError(e.message || 'Impossible de sauvegarder les informations principales');
     } finally {
       setIsSavingMainInfo(false);
     }
   };
 
+  // --- Quick settings
   const handleStartQuickSettingsEdit = () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
     setQuickSettingsError(null);
     setIsEditingQuickSettings(true);
   };
-
   const handleCancelQuickSettingsEdit = () => {
     setIsEditingQuickSettings(false);
     setQuickSettingsError(null);
   };
-
   const handleQuickSettingsChange = (field, value) => {
-    setQuickSettingsDraft((previous) => ({
-      ...previous,
-      [field]: value
-    }));
+    setQuickSettingsDraft((prev) => ({ ...prev, [field]: value }));
   };
-
   const handleSaveQuickSettings = async () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
     const token = localStorage.getItem('auth-token');
-
     if (!token) {
       router.replace('/auth/login');
       return;
     }
 
     const parsePositiveFloat = (value, fallback = null) => {
-      if (typeof value === 'number') {
-        return Number.isFinite(value) && value >= 0 ? value : fallback;
-      }
+      if (typeof value === 'number') return Number.isFinite(value) && value >= 0 ? value : fallback;
       const parsed = Number.parseFloat(String(value).trim());
-      if (Number.isFinite(parsed) && parsed >= 0) {
-        return parsed;
-      }
-      return fallback;
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
     };
 
     const depositType = quickSettingsDraft.depositType || 'none';
@@ -1100,7 +873,6 @@ export default function PropertyDetailsPage() {
       setQuickSettingsError('Indiquez un montant de caution valide.');
       return;
     }
-
     if (depositType === 'range') {
       if (depositMin === null || depositMax === null) {
         setQuickSettingsError('Indiquez les montants minimum et maximum de la caution.');
@@ -1128,45 +900,27 @@ export default function PropertyDetailsPage() {
     if (depositType === 'none') {
       operationsOverrides.deposit = null;
     } else if (depositType === 'fixed') {
-      operationsOverrides.deposit = {
-        type: 'fixed',
-        amount: depositAmount ?? 0,
-        method: depositMethod
-      };
+      operationsOverrides.deposit = { type: 'fixed', amount: depositAmount ?? 0, method: depositMethod };
     } else {
-      operationsOverrides.deposit = {
-        type: 'range',
-        min: depositMin ?? 0,
-        max: depositMax ?? 0,
-        method: depositMethod
-      };
+      operationsOverrides.deposit = { type: 'range', min: depositMin ?? 0, max: depositMax ?? 0, method: depositMethod };
     }
 
     const settingsOverrides = {
       accessCode: quickSettingsDraft.accessCode?.trim?.() ?? '',
       cleaningFee: cleaningFee ?? 0,
       requireDeposit: depositType !== 'none',
-      depositAmount: depositType === 'fixed' ? (depositAmount ?? 0) : 0,
+      depositAmount: depositType === 'fixed' ? depositAmount ?? 0 : 0,
       checkInTime: operationsOverrides.checkInTime,
       checkOutTime: operationsOverrides.checkOutTime
     };
 
     try {
-      const payload = buildUpdatePayload({
-        operations: operationsOverrides,
-        settings: settingsOverrides
-      });
-
-      if (!payload) {
-        throw new Error('Impossible de préparer la mise à jour.');
-      }
+      const payload = buildUpdatePayload({ operations: operationsOverrides, settings: settingsOverrides });
+      if (!payload) throw new Error('Impossible de préparer la mise à jour.');
 
       const response = await fetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -1174,7 +928,6 @@ export default function PropertyDetailsPage() {
         router.replace('/auth/login');
         return;
       }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData?.message || 'Impossible de sauvegarder les paramètres rapides');
@@ -1183,31 +936,27 @@ export default function PropertyDetailsPage() {
       const updated = await response.json();
       setProperty(updated);
       setIsEditingQuickSettings(false);
-    } catch (error) {
-      console.error('Error saving quick settings:', error);
-      setQuickSettingsError(error.message || 'Impossible de sauvegarder les paramètres rapides');
+    } catch (e) {
+      console.error('Error saving quick settings:', e);
+      setQuickSettingsError(e.message || 'Impossible de sauvegarder les paramètres rapides');
     } finally {
       setIsSavingQuickSettings(false);
     }
   };
 
+  // --- Amenities
   const handleStartAmenitiesEdit = () => {
     setAmenitiesError(null);
     setIsEditingAmenities(true);
   };
-
   const handleCancelAmenitiesEdit = () => {
     setIsEditingAmenities(false);
     setAmenitiesError(null);
   };
-
   const handleSaveAmenities = async () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
     const token = localStorage.getItem('auth-token');
-
     if (!token) {
       router.replace('/auth/login');
       return;
@@ -1224,21 +973,13 @@ export default function PropertyDetailsPage() {
     try {
       const payload = buildUpdatePayload({
         amenities: equipments,
-        operations: {
-          equipments
-        }
+        operations: { equipments }
       });
-
-      if (!payload) {
-        throw new Error('Impossible de préparer la mise à jour.');
-      }
+      if (!payload) throw new Error('Impossible de préparer la mise à jour.');
 
       const response = await fetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -1246,7 +987,6 @@ export default function PropertyDetailsPage() {
         router.replace('/auth/login');
         return;
       }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData?.message || 'Impossible de sauvegarder les équipements');
@@ -1255,75 +995,42 @@ export default function PropertyDetailsPage() {
       const updated = await response.json();
       setProperty(updated);
       setIsEditingAmenities(false);
-    } catch (error) {
-      console.error('Error saving amenities:', error);
-      setAmenitiesError(error.message || 'Impossible de sauvegarder les équipements');
+    } catch (e) {
+      console.error('Error saving amenities:', e);
+      setAmenitiesError(e.message || 'Impossible de sauvegarder les équipements');
     } finally {
       setIsSavingAmenities(false);
     }
   };
 
+  // --- Photos
   const handleStartPhotosEdit = () => {
     setPhotosError(null);
     setIsEditingPhotos(true);
   };
-
   const handleCancelPhotosEdit = () => {
     setIsEditingPhotos(false);
     setPhotosError(null);
   };
-
   const handlePhotoCategoryChange = (index, field, value) => {
-    setPhotosDraft((previous) => {
-      const next = previous.map((category, categoryIndex) => {
-        if (categoryIndex !== index) {
-          return category;
-        }
-        return {
-          ...category,
-          [field]: value
-        };
-      });
-      return next;
-    });
+    setPhotosDraft((prev) =>
+      prev.map((category, i) => (i === index ? { ...category, [field]: value } : category))
+    );
   };
-
   const handlePhotoMediaChange = (categoryIndex, mediaIndex, field, value) => {
-    setPhotosDraft((previous) => {
-      const next = previous.map((category, currentCategoryIndex) => {
-        if (currentCategoryIndex !== categoryIndex) {
-          return category;
-        }
-
+    setPhotosDraft((prev) =>
+      prev.map((category, i) => {
+        if (i !== categoryIndex) return category;
         const mediaList = Array.isArray(category.media) ? category.media : [];
-        const updatedMedia = mediaList.map((mediaItem, currentMediaIndex) => {
-          if (currentMediaIndex !== mediaIndex) {
-            return mediaItem;
-          }
-
-          return {
-            ...mediaItem,
-            [field]: value
-          };
-        });
-
-        return {
-          ...category,
-          media: updatedMedia
-        };
-      });
-
-      return next;
-    });
+        const updatedMedia = mediaList.map((m, j) => (j === mediaIndex ? { ...m, [field]: value } : m));
+        return { ...category, media: updatedMedia };
+      })
+    );
   };
-
   const handleSavePhotos = async () => {
-    if (!property) {
-      return;
-    }
+    if (!property) return;
 
     const token = localStorage.getItem('auth-token');
-
     if (!token) {
       router.replace('/auth/login');
       return;
@@ -1336,13 +1043,13 @@ export default function PropertyDetailsPage() {
       shortDescription: category.shortDescription?.trim?.() ?? '',
       videoUrl: category.videoUrl?.trim?.() ?? category.videoUrl ?? '',
       media: Array.isArray(category.media)
-        ? category.media.map((mediaItem) => ({
-            ...mediaItem,
-            alt: mediaItem.alt?.trim?.() ?? '',
-            credit: mediaItem.credit?.trim?.() ?? '',
-            hidden: Boolean(mediaItem.hidden),
-            isCover: Boolean(mediaItem.isCover),
-            isHero: Boolean(mediaItem.isHero)
+        ? category.media.map((item) => ({
+            ...item,
+            alt: item.alt?.trim?.() ?? '',
+            credit: item.credit?.trim?.() ?? '',
+            hidden: Boolean(item.hidden),
+            isCover: Boolean(item.isCover),
+            isHero: Boolean(item.isHero)
           }))
         : []
     }));
@@ -1351,22 +1058,12 @@ export default function PropertyDetailsPage() {
     setPhotosError(null);
 
     try {
-      const payload = buildUpdatePayload({
-        medias: {
-          categories: sanitizedCategories
-        }
-      });
-
-      if (!payload) {
-        throw new Error('Impossible de préparer la mise à jour.');
-      }
+      const payload = buildUpdatePayload({ medias: { categories: sanitizedCategories } });
+      if (!payload) throw new Error('Impossible de préparer la mise à jour.');
 
       const response = await fetch(`/api/properties/${property.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -1374,7 +1071,6 @@ export default function PropertyDetailsPage() {
         router.replace('/auth/login');
         return;
       }
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData?.message || 'Impossible de sauvegarder les médias');
@@ -1383,9 +1079,9 @@ export default function PropertyDetailsPage() {
       const updated = await response.json();
       setProperty(updated);
       setIsEditingPhotos(false);
-    } catch (error) {
-      console.error('Error saving medias:', error);
-      setPhotosError(error.message || 'Impossible de sauvegarder les médias');
+    } catch (e) {
+      console.error('Error saving medias:', e);
+      setPhotosError(e.message || 'Impossible de sauvegarder les médias');
     } finally {
       setIsSavingPhotos(false);
     }
@@ -1405,10 +1101,7 @@ export default function PropertyDetailsPage() {
 
           {property && (
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleOpenCalendar}
-                className="btn-secondary inline-flex items-center"
-              >
+              <button onClick={handleOpenCalendar} className="btn-secondary inline-flex items-center">
                 <Calendar className="mr-2 h-4 w-4" />
                 Calendrier
               </button>
@@ -1420,10 +1113,7 @@ export default function PropertyDetailsPage() {
                 <Globe className="mr-2 h-4 w-4" />
                 Publier
               </button>
-              <button
-                onClick={handleOpenSettings}
-                className="btn-primary inline-flex items-center"
-              >
+              <button onClick={handleOpenSettings} className="btn-primary inline-flex items-center">
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </button>
@@ -1441,6 +1131,7 @@ export default function PropertyDetailsPage() {
           </div>
         ) : property ? (
           <div className="space-y-6">
+            {/* Hero */}
             <div className="card overflow-hidden p-0">
               <div className="relative h-64 w-full sm:h-80">
                 {heroPhoto?.url ? (
@@ -1483,9 +1174,7 @@ export default function PropertyDetailsPage() {
                   </div>
                   <div className="text-white drop-shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Propriétaire</p>
-                    <p className="text-base font-semibold">
-                      {ownerName || 'Votre profil'}
-                    </p>
+                    <p className="text-base font-semibold">{ownerName || 'Votre profil'}</p>
                     {ownerProfile?.profile?.jobTitle && (
                       <p className="text-xs text-white/70">{ownerProfile.profile.jobTitle}</p>
                     )}
@@ -1493,11 +1182,11 @@ export default function PropertyDetailsPage() {
                 </div>
 
                 <div className="absolute top-4 right-4">
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                    property.status === 'inactive'
-                      ? 'bg-gray-200 text-gray-700'
-                      : 'bg-success-500/90 text-white'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                      property.status === 'inactive' ? 'bg-gray-200 text-gray-700' : 'bg-success-500/90 text-white'
+                    }`}
+                  >
                     {property.status === 'inactive' ? 'Inactive' : 'Active'}
                   </span>
                 </div>
@@ -1531,21 +1220,17 @@ export default function PropertyDetailsPage() {
               </div>
             </div>
 
+            {/* Descriptions */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Courte */}
               <div className="card space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">Description courte</h2>
-                    <p className="text-sm text-gray-500">
-                      Partagez une accroche percutante (160 caractères max).
-                    </p>
+                    <p className="text-sm text-gray-500">Partagez une accroche percutante (160 caractères max).</p>
                   </div>
                   {!isEditingShortDescription && (
-                    <button
-                      type="button"
-                      onClick={handleStartShortDescriptionEdit}
-                      className="btn-secondary inline-flex items-center"
-                    >
+                    <button type="button" onClick={handleStartShortDescriptionEdit} className="btn-secondary inline-flex items-center">
                       <Pencil className="mr-2 h-4 w-4" />
                       Modifier
                     </button>
@@ -1555,62 +1240,41 @@ export default function PropertyDetailsPage() {
                   <div className="space-y-3">
                     <textarea
                       value={shortDescriptionDraft}
-                      onChange={(event) => setShortDescriptionDraft(event.target.value)}
+                      onChange={(e) => setShortDescriptionDraft(e.target.value)}
                       maxLength={160}
                       rows={4}
                       className={`form-textarea ${shortDescriptionError ? 'border-danger-500' : ''}`}
                     />
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{shortDescriptionDraft.length}/160 caractères</span>
-                      {shortDescriptionError && (
-                        <span className="text-danger-600">{shortDescriptionError}</span>
-                      )}
+                      {shortDescriptionError && <span className="text-danger-600">{shortDescriptionError}</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleCancelShortDescriptionEdit}
-                        className="btn-secondary"
-                        disabled={isSavingShortDescription}
-                      >
+                      <button type="button" onClick={handleCancelShortDescriptionEdit} className="btn-secondary" disabled={isSavingShortDescription}>
                         Annuler
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveShortDescription}
-                        className="btn-primary inline-flex items-center"
-                        disabled={isSavingShortDescription}
-                      >
-                        {isSavingShortDescription && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                      <button type="button" onClick={handleSaveShortDescription} className="btn-primary inline-flex items-center" disabled={isSavingShortDescription}>
+                        {isSavingShortDescription && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Enregistrer
                       </button>
                     </div>
                   </div>
                 ) : (
                   <p className="whitespace-pre-line text-sm text-gray-600">
-                    {property.shortDescription
-                      || property.general?.shortDescription
-                      || 'Ajoutez une description courte pour présenter rapidement votre logement.'}
+                    {property.shortDescription || property.general?.shortDescription || 'Ajoutez une description courte pour présenter rapidement votre logement.'}
                   </p>
                 )}
               </div>
 
+              {/* Longue */}
               <div className="card space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">Description longue</h2>
-                    <p className="text-sm text-gray-500">
-                      Décrivez en détail l&apos;expérience proposée dans le logement.
-                    </p>
+                    <p className="text-sm text-gray-500">Décrivez en détail l&apos;expérience proposée dans le logement.</p>
                   </div>
                   {!isEditingLongDescription && (
-                    <button
-                      type="button"
-                      onClick={handleStartLongDescriptionEdit}
-                      className="btn-secondary inline-flex items-center"
-                    >
+                    <button type="button" onClick={handleStartLongDescriptionEdit} className="btn-secondary inline-flex items-center">
                       <Pencil className="mr-2 h-4 w-4" />
                       Modifier
                     </button>
@@ -1620,45 +1284,30 @@ export default function PropertyDetailsPage() {
                   <div className="space-y-3">
                     <textarea
                       value={longDescriptionDraft}
-                      onChange={(event) => setLongDescriptionDraft(event.target.value)}
+                      onChange={(e) => setLongDescriptionDraft(e.target.value)}
                       rows={8}
                       className={`form-textarea ${longDescriptionError ? 'border-danger-500' : ''}`}
                     />
-                    {longDescriptionError && (
-                      <p className="text-xs text-danger-600">{longDescriptionError}</p>
-                    )}
+                    {longDescriptionError && <p className="text-xs text-danger-600">{longDescriptionError}</p>}
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleCancelLongDescriptionEdit}
-                        className="btn-secondary"
-                        disabled={isSavingLongDescription}
-                      >
+                      <button type="button" onClick={handleCancelLongDescriptionEdit} className="btn-secondary" disabled={isSavingLongDescription}>
                         Annuler
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveLongDescription}
-                        className="btn-primary inline-flex items-center"
-                        disabled={isSavingLongDescription}
-                      >
-                        {isSavingLongDescription && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                      <button type="button" onClick={handleSaveLongDescription} className="btn-primary inline-flex items-center" disabled={isSavingLongDescription}>
+                        {isSavingLongDescription && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Enregistrer
                       </button>
                     </div>
                   </div>
                 ) : (
                   <p className="whitespace-pre-line text-sm text-gray-600">
-                    {property.description
-                      || property.general?.longDescription
-                      || 'Ajoutez une description détaillée pour donner envie à vos voyageurs.'}
+                    {property.description || property.general?.longDescription || 'Ajoutez une description détaillée pour donner envie à vos voyageurs.'}
                   </p>
                 )}
               </div>
             </div>
 
+            {/* Mini-site */}
             {miniSiteUrl && (
               <div className="card bg-primary-50/40 border-primary-100">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -1669,26 +1318,22 @@ export default function PropertyDetailsPage() {
                     </div>
                     <h2 className="mt-2 text-xl font-semibold text-gray-900">Partagez votre lien de réservation</h2>
                     <p className="mt-2 text-gray-600">
-                      Ce lien ouvre un mini site inspiré d&apos;Airbnb, prêt à être partagé avec vos voyageurs. Il accueillera vos futures synchronisations de calendriers (API ou lien iCal).
+                      Ce lien ouvre un mini site inspiré d&apos;Airbnb, prêt à être partagé avec vos voyageurs. Il accueillera vos futures
+                      synchronisations de calendriers (API ou lien iCal).
                     </p>
                   </div>
                   <div className="w-full max-w-md rounded-lg border border-primary-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">Lien public</p>
                     <div className="mt-2 flex flex-col gap-2">
-                      <code className="block truncate rounded-md bg-primary-50 px-3 py-2 text-sm text-primary-800">{displayMiniSiteUrl}</code>
+                      <code className="block truncate rounded-md bg-primary-50 px-3 py-2 text-sm text-primary-800">
+                        {displayMiniSiteUrl}
+                      </code>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={handlePublish}
-                          className="btn-primary inline-flex flex-1 items-center justify-center"
-                        >
+                        <button onClick={handlePublish} className="btn-primary inline-flex flex-1 items-center justify-center">
                           <Globe className="mr-2 h-4 w-4" />
                           Ouvrir
                         </button>
-                        <button
-                          type="button"
-                          onClick={handleCopyMiniSiteUrl}
-                          className="btn-secondary inline-flex items-center"
-                        >
+                        <button type="button" onClick={handleCopyMiniSiteUrl} className="btn-secondary inline-flex items-center">
                           <Copy className="mr-2 h-4 w-4" />
                           {isMiniSiteCopied ? 'Copié !' : 'Copier'}
                         </button>
@@ -1699,21 +1344,17 @@ export default function PropertyDetailsPage() {
               </div>
             )}
 
+            {/* Infos principales & paramètres */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Main info */}
               <div className="card space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">Informations principales</h2>
-                    <p className="text-sm text-gray-500">
-                      Adresse et capacité affichées sur vos supports.
-                    </p>
+                    <p className="text-sm text-gray-500">Adresse et capacité affichées sur vos supports.</p>
                   </div>
                   {!isEditingMainInfo && (
-                    <button
-                      type="button"
-                      onClick={handleStartMainInfoEdit}
-                      className="btn-secondary inline-flex items-center"
-                    >
+                    <button type="button" onClick={handleStartMainInfoEdit} className="btn-secondary inline-flex items-center">
                       <Pencil className="mr-2 h-4 w-4" />
                       Modifier
                     </button>
@@ -1727,7 +1368,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="text"
                           value={mainInfoDraft.streetNumber}
-                          onChange={(event) => handleMainInfoChange('streetNumber', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('streetNumber', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1736,7 +1377,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="text"
                           value={mainInfoDraft.street}
-                          onChange={(event) => handleMainInfoChange('street', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('street', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1746,7 +1387,7 @@ export default function PropertyDetailsPage() {
                       <input
                         type="text"
                         value={mainInfoDraft.complement}
-                        onChange={(event) => handleMainInfoChange('complement', event.target.value)}
+                        onChange={(e) => handleMainInfoChange('complement', e.target.value)}
                         className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
@@ -1756,7 +1397,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="text"
                           value={mainInfoDraft.postalCode}
-                          onChange={(event) => handleMainInfoChange('postalCode', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('postalCode', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1765,7 +1406,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="text"
                           value={mainInfoDraft.city}
-                          onChange={(event) => handleMainInfoChange('city', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('city', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1775,7 +1416,7 @@ export default function PropertyDetailsPage() {
                       <input
                         type="text"
                         value={mainInfoDraft.country}
-                        onChange={(event) => handleMainInfoChange('country', event.target.value)}
+                        onChange={(e) => handleMainInfoChange('country', e.target.value)}
                         className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
@@ -1784,7 +1425,7 @@ export default function PropertyDetailsPage() {
                       <input
                         type="text"
                         value={mainInfoDraft.formatted}
-                        onChange={(event) => handleMainInfoChange('formatted', event.target.value)}
+                        onChange={(e) => handleMainInfoChange('formatted', e.target.value)}
                         className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
@@ -1795,7 +1436,7 @@ export default function PropertyDetailsPage() {
                           type="number"
                           min={1}
                           value={mainInfoDraft.adults}
-                          onChange={(event) => handleMainInfoChange('adults', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('adults', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1805,7 +1446,7 @@ export default function PropertyDetailsPage() {
                           type="number"
                           min={0}
                           value={mainInfoDraft.children}
-                          onChange={(event) => handleMainInfoChange('children', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('children', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1817,7 +1458,7 @@ export default function PropertyDetailsPage() {
                           type="number"
                           min={0}
                           value={mainInfoDraft.bedrooms}
-                          onChange={(event) => handleMainInfoChange('bedrooms', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('bedrooms', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1827,7 +1468,7 @@ export default function PropertyDetailsPage() {
                           type="number"
                           min={0}
                           value={mainInfoDraft.beds}
-                          onChange={(event) => handleMainInfoChange('beds', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('beds', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1837,32 +1478,18 @@ export default function PropertyDetailsPage() {
                           type="number"
                           min={0}
                           value={mainInfoDraft.bathrooms}
-                          onChange={(event) => handleMainInfoChange('bathrooms', event.target.value)}
+                          onChange={(e) => handleMainInfoChange('bathrooms', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
                     </div>
-                    {mainInfoError && (
-                      <p className="text-sm text-danger-600">{mainInfoError}</p>
-                    )}
+                    {mainInfoError && <p className="text-sm text-danger-600">{mainInfoError}</p>}
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={handleCancelMainInfoEdit}
-                        className="btn-secondary"
-                        disabled={isSavingMainInfo}
-                      >
+                      <button type="button" onClick={handleCancelMainInfoEdit} className="btn-secondary" disabled={isSavingMainInfo}>
                         Annuler
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveMainInfo}
-                        className="btn-primary inline-flex items-center"
-                        disabled={isSavingMainInfo}
-                      >
-                        {isSavingMainInfo && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                      <button type="button" onClick={handleSaveMainInfo} className="btn-primary inline-flex items-center" disabled={isSavingMainInfo}>
+                        {isSavingMainInfo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Enregistrer
                       </button>
                     </div>
@@ -1901,20 +1528,15 @@ export default function PropertyDetailsPage() {
                 )}
               </div>
 
+              {/* Quick settings */}
               <div className="card space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">Paramètres rapides</h2>
-                    <p className="text-sm text-gray-500">
-                      Gérez les règles d&apos;accueil et vos frais annexes.
-                    </p>
+                    <p className="text-sm text-gray-500">Gérez les règles d&apos;accueil et vos frais annexes.</p>
                   </div>
                   {!isEditingQuickSettings && (
-                    <button
-                      type="button"
-                      onClick={handleStartQuickSettingsEdit}
-                      className="btn-secondary inline-flex items-center"
-                    >
+                    <button type="button" onClick={handleStartQuickSettingsEdit} className="btn-secondary inline-flex items-center">
                       <Pencil className="mr-2 h-4 w-4" />
                       Modifier
                     </button>
@@ -1928,7 +1550,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="time"
                           value={quickSettingsDraft.checkInTime}
-                          onChange={(event) => handleQuickSettingsChange('checkInTime', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('checkInTime', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1936,7 +1558,7 @@ export default function PropertyDetailsPage() {
                         <label className="text-sm font-medium text-gray-700">Mode d&apos;arrivée</label>
                         <select
                           value={quickSettingsDraft.checkInMode}
-                          onChange={(event) => handleQuickSettingsChange('checkInMode', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('checkInMode', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         >
                           <option value="self">Autonome</option>
@@ -1948,7 +1570,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="time"
                           value={quickSettingsDraft.checkOutTime}
-                          onChange={(event) => handleQuickSettingsChange('checkOutTime', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('checkOutTime', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -1956,7 +1578,7 @@ export default function PropertyDetailsPage() {
                         <label className="text-sm font-medium text-gray-700">Mode de départ</label>
                         <select
                           value={quickSettingsDraft.checkOutMode}
-                          onChange={(event) => handleQuickSettingsChange('checkOutMode', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('checkOutMode', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         >
                           <option value="self">Autonome</option>
@@ -1969,7 +1591,7 @@ export default function PropertyDetailsPage() {
                       <input
                         type="text"
                         value={quickSettingsDraft.accessCode}
-                        onChange={(event) => handleQuickSettingsChange('accessCode', event.target.value)}
+                        onChange={(e) => handleQuickSettingsChange('accessCode', e.target.value)}
                         className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
@@ -1978,7 +1600,7 @@ export default function PropertyDetailsPage() {
                         <label className="text-sm font-medium text-gray-700">Type de caution</label>
                         <select
                           value={quickSettingsDraft.depositType}
-                          onChange={(event) => handleQuickSettingsChange('depositType', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('depositType', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         >
                           <option value="none">Aucune</option>
@@ -1990,7 +1612,7 @@ export default function PropertyDetailsPage() {
                         <label className="text-sm font-medium text-gray-700">Méthode</label>
                         <select
                           value={quickSettingsDraft.depositMethod}
-                          onChange={(event) => handleQuickSettingsChange('depositMethod', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('depositMethod', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                           disabled={quickSettingsDraft.depositType === 'none'}
                         >
@@ -2005,7 +1627,7 @@ export default function PropertyDetailsPage() {
                           min={0}
                           step="0.01"
                           value={quickSettingsDraft.cleaningFee}
-                          onChange={(event) => handleQuickSettingsChange('cleaningFee', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('cleaningFee', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -2018,7 +1640,7 @@ export default function PropertyDetailsPage() {
                           min={0}
                           step="0.01"
                           value={quickSettingsDraft.depositAmount}
-                          onChange={(event) => handleQuickSettingsChange('depositAmount', event.target.value)}
+                          onChange={(e) => handleQuickSettingsChange('depositAmount', e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </div>
@@ -2032,7 +1654,7 @@ export default function PropertyDetailsPage() {
                             min={0}
                             step="0.01"
                             value={quickSettingsDraft.depositMin}
-                            onChange={(event) => handleQuickSettingsChange('depositMin', event.target.value)}
+                            onChange={(e) => handleQuickSettingsChange('depositMin', e.target.value)}
                             className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                           />
                         </div>
@@ -2043,7 +1665,7 @@ export default function PropertyDetailsPage() {
                             min={0}
                             step="0.01"
                             value={quickSettingsDraft.depositMax}
-                            onChange={(event) => handleQuickSettingsChange('depositMax', event.target.value)}
+                            onChange={(e) => handleQuickSettingsChange('depositMax', e.target.value)}
                             className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                           />
                         </div>
@@ -2054,7 +1676,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="checkbox"
                           checked={quickSettingsDraft.smokingAllowed}
-                          onChange={(event) => handleQuickSettingsChange('smokingAllowed', event.target.checked)}
+                          onChange={(e) => handleQuickSettingsChange('smokingAllowed', e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
                         Fumeurs acceptés
@@ -2063,7 +1685,7 @@ export default function PropertyDetailsPage() {
                         <input
                           type="checkbox"
                           checked={quickSettingsDraft.petsAllowed}
-                          onChange={(event) => handleQuickSettingsChange('petsAllowed', event.target.checked)}
+                          onChange={(e) => handleQuickSettingsChange('petsAllowed', e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
                         Animaux acceptés
@@ -2072,33 +1694,19 @@ export default function PropertyDetailsPage() {
                         <input
                           type="checkbox"
                           checked={quickSettingsDraft.partiesAllowed}
-                          onChange={(event) => handleQuickSettingsChange('partiesAllowed', event.target.checked)}
+                          onChange={(e) => handleQuickSettingsChange('partiesAllowed', e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
                         Fêtes autorisées
                       </label>
                     </div>
-                    {quickSettingsError && (
-                      <p className="text-sm text-danger-600">{quickSettingsError}</p>
-                    )}
+                    {quickSettingsError && <p className="text-sm text-danger-600">{quickSettingsError}</p>}
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={handleCancelQuickSettingsEdit}
-                        className="btn-secondary"
-                        disabled={isSavingQuickSettings}
-                      >
+                      <button type="button" onClick={handleCancelQuickSettingsEdit} className="btn-secondary" disabled={isSavingQuickSettings}>
                         Annuler
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveQuickSettings}
-                        className="btn-primary inline-flex items-center"
-                        disabled={isSavingQuickSettings}
-                      >
-                        {isSavingQuickSettings && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                      <button type="button" onClick={handleSaveQuickSettings} className="btn-primary inline-flex items-center" disabled={isSavingQuickSettings}>
+                        {isSavingQuickSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Enregistrer
                       </button>
                     </div>
@@ -2106,8 +1714,7 @@ export default function PropertyDetailsPage() {
                 ) : (
                   <div className="space-y-3 text-gray-600">
                     <p>
-                      <span className="font-medium text-gray-700">Check-in :</span>{' '}
-                      {checkInTime}
+                      <span className="font-medium text-gray-700">Check-in :</span> {checkInTime}
                       {checkInModeLabel && (
                         <span className="ml-2 rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-700">
                           {checkInModeLabel}
@@ -2115,8 +1722,7 @@ export default function PropertyDetailsPage() {
                       )}
                     </p>
                     <p>
-                      <span className="font-medium text-gray-700">Check-out :</span>{' '}
-                      {checkOutTime}
+                      <span className="font-medium text-gray-700">Check-out :</span> {checkOutTime}
                       {checkOutModeLabel && (
                         <span className="ml-2 rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-700">
                           {checkOutModeLabel}
@@ -2125,34 +1731,23 @@ export default function PropertyDetailsPage() {
                     </p>
                     <p className="flex items-center gap-2">
                       <Key className="h-4 w-4 text-primary-600" />
-                      <span>
-                        Code d&apos;accès : {property.settings?.accessCode || 'Non défini'}
-                      </span>
+                      <span>Code d&apos;accès : {property.settings?.accessCode || 'Non défini'}</span>
                     </p>
                     <p>
-                      <span className="font-medium text-gray-700">Dépôt :</span>{' '}
-                      {depositText}
+                      <span className="font-medium text-gray-700">Dépôt :</span> {depositText}
                     </p>
                     <p>
                       <span className="font-medium text-gray-700">Frais de ménage :</span>{' '}
-                      {property.settings?.cleaningFee != null
-                        ? `${property.settings.cleaningFee} €`
-                        : 'Non défini'}
+                      {property.settings?.cleaningFee != null ? `${property.settings.cleaningFee} €` : 'Non défini'}
                     </p>
                     <div className="flex flex-wrap gap-2 pt-2 text-xs">
-                      <span
-                        className={`rounded-full px-3 py-1 font-medium ${operations.smokingAllowed ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}`}
-                      >
+                      <span className={`rounded-full px-3 py-1 font-medium ${operations.smokingAllowed ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}`}>
                         {operations.smokingAllowed ? 'Fumeurs acceptés' : 'Non fumeurs'}
                       </span>
-                      <span
-                        className={`rounded-full px-3 py-1 font-medium ${operations.petsAllowed ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}`}
-                      >
+                      <span className={`rounded-full px-3 py-1 font-medium ${operations.petsAllowed ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}`}>
                         {operations.petsAllowed ? 'Animaux acceptés' : 'Animaux interdits'}
                       </span>
-                      <span
-                        className={`rounded-full px-3 py-1 font-medium ${operations.partiesAllowed ? 'bg-warning-100 text-warning-700' : 'bg-gray-100 text-gray-600'}`}
-                      >
+                      <span className={`rounded-full px-3 py-1 font-medium ${operations.partiesAllowed ? 'bg-warning-100 text-warning-700' : 'bg-gray-100 text-gray-600'}`}>
                         {operations.partiesAllowed ? 'Fêtes autorisées' : 'Fêtes interdites'}
                       </span>
                     </div>
@@ -2161,6 +1756,7 @@ export default function PropertyDetailsPage() {
               </div>
             </div>
 
+            {/* Équipements */}
             <div className="card space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -2168,11 +1764,7 @@ export default function PropertyDetailsPage() {
                   <p className="text-sm text-gray-500">Renseignez les équipements disponibles pour vos voyageurs.</p>
                 </div>
                 {!isEditingAmenities && (
-                  <button
-                    type="button"
-                    onClick={handleStartAmenitiesEdit}
-                    className="btn-secondary inline-flex items-center"
-                  >
+                  <button type="button" onClick={handleStartAmenitiesEdit} className="btn-secondary inline-flex items-center">
                     <Pencil className="mr-2 h-4 w-4" />
                     Modifier
                   </button>
@@ -2183,32 +1775,18 @@ export default function PropertyDetailsPage() {
                   <textarea
                     rows={6}
                     value={amenitiesDraft}
-                    onChange={(event) => setAmenitiesDraft(event.target.value)}
+                    onChange={(e) => setAmenitiesDraft(e.target.value)}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     placeholder="Wi-Fi\nClimatisation\nMachine à café"
                   />
                   <p className="text-xs text-gray-500">Saisissez un équipement par ligne ou séparez-les par une virgule.</p>
-                  {amenitiesError && (
-                    <p className="text-sm text-danger-600">{amenitiesError}</p>
-                  )}
+                  {amenitiesError && <p className="text-sm text-danger-600">{amenitiesError}</p>}
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={handleCancelAmenitiesEdit}
-                      className="btn-secondary"
-                      disabled={isSavingAmenities}
-                    >
+                    <button type="button" onClick={handleCancelAmenitiesEdit} className="btn-secondary" disabled={isSavingAmenities}>
                       Annuler
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveAmenities}
-                      className="btn-primary inline-flex items-center"
-                      disabled={isSavingAmenities}
-                    >
-                      {isSavingAmenities && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
+                    <button type="button" onClick={handleSaveAmenities} className="btn-primary inline-flex items-center" disabled={isSavingAmenities}>
+                      {isSavingAmenities && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Enregistrer
                     </button>
                   </div>
@@ -2216,10 +1794,7 @@ export default function PropertyDetailsPage() {
               ) : property.amenities?.length ? (
                 <div className="flex flex-wrap gap-2">
                   {property.amenities.map((amenity) => (
-                    <span
-                      key={amenity}
-                      className="rounded-full bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700"
-                    >
+                    <span key={amenity} className="rounded-full bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700">
                       {amenity}
                     </span>
                   ))}
@@ -2229,35 +1804,29 @@ export default function PropertyDetailsPage() {
               )}
             </div>
 
+            {/* Stats */}
             {property.stats && (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <div className="card text-center">
                   <p className="text-sm font-medium text-gray-600">Réservations</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {property.stats.totalBookings ?? 0}
-                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">{property.stats.totalBookings ?? 0}</p>
                 </div>
                 <div className="card text-center">
                   <p className="text-sm font-medium text-gray-600">Revenus</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {property.stats.totalRevenue ?? 0} €
-                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">{property.stats.totalRevenue ?? 0} €</p>
                 </div>
                 <div className="card text-center">
                   <p className="text-sm font-medium text-gray-600">Note moyenne</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {property.stats.averageRating ?? 0} / 5
-                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">{property.stats.averageRating ?? 0} / 5</p>
                 </div>
                 <div className="card text-center">
                   <p className="text-sm font-medium text-gray-600">Taux d&apos;occupation</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {property.stats.occupancyRate ?? 0}%
-                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">{property.stats.occupancyRate ?? 0}%</p>
                 </div>
               </div>
             )}
 
+            {/* Galeries */}
             {(sortedCategories.length > 0 || isEditingPhotos) && (
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -2268,39 +1837,24 @@ export default function PropertyDetailsPage() {
                     </p>
                   </div>
                   {!isEditingPhotos ? (
-                    <button
-                      type="button"
-                      onClick={handleStartPhotosEdit}
-                      className="btn-secondary inline-flex items-center"
-                    >
+                    <button type="button" onClick={handleStartPhotosEdit} className="btn-secondary inline-flex items-center">
                       <Pencil className="mr-2 h-4 w-4" />
                       Modifier
                     </button>
                   ) : (
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={handleCancelPhotosEdit}
-                        className="btn-secondary"
-                        disabled={isSavingPhotos}
-                      >
+                      <button type="button" onClick={handleCancelPhotosEdit} className="btn-secondary" disabled={isSavingPhotos}>
                         Annuler
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleSavePhotos}
-                        className="btn-primary inline-flex items-center"
-                        disabled={isSavingPhotos}
-                      >
-                        {isSavingPhotos && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                      <button type="button" onClick={handleSavePhotos} className="btn-primary inline-flex items-center" disabled={isSavingPhotos}>
+                        {isSavingPhotos && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Enregistrer
                       </button>
                     </div>
                   )}
                 </div>
                 {photosError && <p className="text-sm text-danger-600">{photosError}</p>}
+
                 {isEditingPhotos ? (
                   photosDraft.length > 0 ? (
                     <div className="space-y-6">
@@ -2312,7 +1866,7 @@ export default function PropertyDetailsPage() {
                               <input
                                 type="text"
                                 value={category.label || ''}
-                                onChange={(event) => handlePhotoCategoryChange(categoryIndex, 'label', event.target.value)}
+                                onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'label', e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                               />
                             </div>
@@ -2321,7 +1875,7 @@ export default function PropertyDetailsPage() {
                               <input
                                 type="text"
                                 value={category.title || ''}
-                                onChange={(event) => handlePhotoCategoryChange(categoryIndex, 'title', event.target.value)}
+                                onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'title', e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                               />
                             </div>
@@ -2331,7 +1885,7 @@ export default function PropertyDetailsPage() {
                             <textarea
                               rows={3}
                               value={category.shortDescription || ''}
-                              onChange={(event) => handlePhotoCategoryChange(categoryIndex, 'shortDescription', event.target.value)}
+                              onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'shortDescription', e.target.value)}
                               className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
                           </div>
@@ -2340,18 +1894,16 @@ export default function PropertyDetailsPage() {
                             <input
                               type="url"
                               value={category.videoUrl || ''}
-                              onChange={(event) => handlePhotoCategoryChange(categoryIndex, 'videoUrl', event.target.value)}
+                              onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'videoUrl', e.target.value)}
                               className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                               placeholder="https://..."
                             />
                           </div>
+
                           <div className="space-y-4">
                             {Array.isArray(category.media) && category.media.length > 0 ? (
                               category.media.map((mediaItem, mediaIndex) => (
-                                <div
-                                  key={mediaItem.id || mediaItem.url || mediaIndex}
-                                  className="grid gap-4 sm:grid-cols-[180px_1fr]"
-                                >
+                                <div key={mediaItem.id || mediaItem.url || mediaIndex} className="grid gap-4 sm:grid-cols-[180px_1fr]">
                                   <div className="relative h-32 w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-100">
                                     {mediaItem.url ? (
                                       <Image
@@ -2374,7 +1926,7 @@ export default function PropertyDetailsPage() {
                                       <input
                                         type="text"
                                         value={mediaItem.alt || ''}
-                                        onChange={(event) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'alt', event.target.value)}
+                                        onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'alt', e.target.value)}
                                         className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                       />
                                     </div>
@@ -2383,7 +1935,7 @@ export default function PropertyDetailsPage() {
                                       <input
                                         type="text"
                                         value={mediaItem.credit || ''}
-                                        onChange={(event) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'credit', event.target.value)}
+                                        onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'credit', e.target.value)}
                                         className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                       />
                                     </div>
@@ -2392,7 +1944,7 @@ export default function PropertyDetailsPage() {
                                         <input
                                           type="checkbox"
                                           checked={Boolean(mediaItem.isCover)}
-                                          onChange={(event) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'isCover', event.target.checked)}
+                                          onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'isCover', e.target.checked)}
                                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         Photo de couverture
@@ -2401,7 +1953,7 @@ export default function PropertyDetailsPage() {
                                         <input
                                           type="checkbox"
                                           checked={Boolean(mediaItem.isHero)}
-                                          onChange={(event) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'isHero', event.target.checked)}
+                                          onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'isHero', e.target.checked)}
                                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         Image héro
@@ -2410,7 +1962,7 @@ export default function PropertyDetailsPage() {
                                         <input
                                           type="checkbox"
                                           checked={Boolean(mediaItem.hidden)}
-                                          onChange={(event) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'hidden', event.target.checked)}
+                                          onChange={(e) => handlePhotoMediaChange(categoryIndex, mediaIndex, 'hidden', e.target.checked)}
                                           className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         Masquer
@@ -2432,30 +1984,25 @@ export default function PropertyDetailsPage() {
                 ) : (
                   <div className="space-y-6">
                     {sortedCategories.map((category) => {
-                      const visibleMedia = category.media.filter((media) => media?.url && !media.hidden);
-                      const videoPreviewUrl = category.videoPreview?.url
-                        || category.videoPreviewUrl
-                        || category.previewImage?.url
-                        || category.previewUrl
-                        || visibleMedia[0]?.thumbnailUrl
-                        || visibleMedia[0]?.url
-                        || null;
+                      const visibleMedia = category.media.filter((m) => m?.url && !m.hidden);
+                      const videoPreviewUrl =
+                        category.videoPreview?.url ||
+                        category.videoPreviewUrl ||
+                        category.previewImage?.url ||
+                        category.previewUrl ||
+                        visibleMedia[0]?.thumbnailUrl ||
+                        visibleMedia[0]?.url ||
+                        null;
 
-                      if (visibleMedia.length === 0 && !category.videoUrl) {
-                        return null;
-                      }
+                      if (visibleMedia.length === 0 && !category.videoUrl) return null;
 
                       return (
                         <div key={category.id || category.key} className="card space-y-4">
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">{category.label}</p>
-                              {category.title && (
-                                <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
-                              )}
-                              {category.shortDescription && (
-                                <p className="mt-2 text-sm text-gray-600">{category.shortDescription}</p>
-                              )}
+                              {category.title && <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>}
+                              {category.shortDescription && <p className="mt-2 text-sm text-gray-600">{category.shortDescription}</p>}
                             </div>
                             {category.videoUrl && (
                               <Dialog>
@@ -2487,12 +2034,7 @@ export default function PropertyDetailsPage() {
                                   <div className="overflow-hidden rounded-2xl bg-black">
                                     <AspectRatio ratio={16 / 9}>
                                       {isDirectVideoUrl(category.videoUrl) ? (
-                                        <video
-                                          src={category.videoUrl}
-                                          controls
-                                          autoPlay
-                                          className="h-full w-full object-contain"
-                                        />
+                                        <video src={category.videoUrl} controls autoPlay className="h-full w-full object-contain" />
                                       ) : (
                                         <iframe
                                           src={category.videoUrl}
@@ -2508,13 +2050,11 @@ export default function PropertyDetailsPage() {
                               </Dialog>
                             )}
                           </div>
+
                           {visibleMedia.length > 0 && (
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {visibleMedia.map((media) => (
-                                <figure
-                                  key={media.id || media.url}
-                                  className="group overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
-                                >
+                                <figure key={media.id || media.url} className="group overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
                                   <div className="relative h-56 w-full bg-gray-100">
                                     <Image
                                       src={media.url}
@@ -2527,9 +2067,7 @@ export default function PropertyDetailsPage() {
                                   </div>
                                   <figcaption className="px-4 py-3">
                                     <p className="text-sm font-medium text-gray-900">{media.alt}</p>
-                                    {media.credit && (
-                                      <p className="mt-1 text-xs text-gray-500">© {media.credit}</p>
-                                    )}
+                                    {media.credit && <p className="mt-1 text-xs text-gray-500">© {media.credit}</p>}
                                     {media.isCover && (
                                       <p className="mt-2 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-700">
                                         Photo de couverture
@@ -2557,4 +2095,3 @@ export default function PropertyDetailsPage() {
     </DashboardLayout>
   );
 }
-

@@ -19,24 +19,24 @@ import { connectDB } from '@/lib/mongodb';
 const FALLBACK_GALLERY = [
   {
     url: 'https://images.pexels.com/photos/1571469/pexels-photo-1571469.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    alt: 'Salon lumineux d\'un appartement contemporain'
+    alt: "Salon lumineux d'un appartement contemporain",
   },
   {
     url: 'https://images.pexels.com/photos/1125134/pexels-photo-1125134.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    alt: 'Chambre cosy avec décoration épurée'
+    alt: 'Chambre cosy avec décoration épurée',
   },
   {
     url: 'https://images.pexels.com/photos/1457847/pexels-photo-1457847.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    alt: 'Cuisine moderne équipée'
+    alt: 'Cuisine moderne équipée',
   },
   {
     url: 'https://images.pexels.com/photos/278209/pexels-photo-278209.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    alt: 'Salle de bain design'
+    alt: 'Salle de bain design',
   },
   {
     url: 'https://images.pexels.com/photos/271795/pexels-photo-271795.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    alt: 'Extérieur d\'une propriété de charme'
-  }
+    alt: "Extérieur d'une propriété de charme",
+  },
 ];
 
 const FALLBACK_HOST_AVATAR =
@@ -65,7 +65,7 @@ async function fetchMiniSiteData(userId, propertyId) {
     amenities: Array.isArray(propertyData.amenities) ? propertyData.amenities : [],
     descriptionPhotos: Array.isArray(propertyData.descriptionPhotos)
       ? propertyData.descriptionPhotos
-      : []
+      : [],
   };
 
   let safeHost = null;
@@ -77,7 +77,7 @@ async function fetchMiniSiteData(userId, propertyId) {
 
   return {
     property: safeProperty,
-    host: safeHost
+    host: safeHost,
   };
 }
 
@@ -87,21 +87,19 @@ export async function generateMetadata({ params }) {
   if (!data?.property) {
     return {
       title: 'Séjour introuvable | Checkinly',
-      description: "Le séjour demandé n'est plus disponible."
+      description: "Le séjour demandé n'est plus disponible.",
     };
   }
 
   const { property, host } = data;
-  const hostName = host
-    ? [host.firstName, host.lastName].filter(Boolean).join(' ')
-    : '';
+  const hostName = host ? [host.firstName, host.lastName].filter(Boolean).join(' ') : '';
   const description = property.description
     ? property.description.slice(0, 155)
     : `Réservez un séjour dans ${property.name}`;
 
   return {
     title: `${property.name}${hostName ? ` – ${hostName}` : ''} | Séjour Checkinly`,
-    description
+    description,
   };
 }
 
@@ -141,7 +139,7 @@ function buildMediaCategories(property) {
       return {
         ...category,
         order,
-        media: visibleMedia
+        media: visibleMedia,
       };
     })
     .filter((category) => category.media.length > 0 || category.videoUrl)
@@ -153,18 +151,20 @@ function buildHighlightCards(property) {
     {
       icon: Users,
       label: 'Voyageurs',
-      value: property?.maxGuests ? `${property.maxGuests} voyageurs` : 'Capacité personnalisable'
+      value: property?.maxGuests ? `${property.maxGuests} voyageurs` : 'Capacité personnalisable',
     },
     {
       icon: Home,
       label: 'Type de logement',
-      value: property?.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1) : 'À définir'
+      value: property?.type
+        ? property.type.charAt(0).toUpperCase() + property.type.slice(1)
+        : 'À définir',
     },
     {
       icon: CalendarDays,
       label: 'Séjours flexibles',
-      value: 'Réservations sur mesure'
-    }
+      value: 'Réservations sur mesure',
+    },
   ];
 }
 
@@ -186,8 +186,8 @@ function buildCta(property, host) {
   const label = property.bookingUrl
     ? 'Réserver maintenant'
     : property.airbnbUrl
-      ? 'Voir sur Airbnb'
-      : 'Contacter l\'hôte';
+    ? 'Voir sur Airbnb'
+    : "Contacter l'hôte";
   const target = property.bookingUrl || property.airbnbUrl ? '_blank' : undefined;
 
   return { href, label, target };
@@ -245,12 +245,13 @@ export default async function MiniSitePage({ params }) {
   const updatedAt = property.updatedAt ? new Date(property.updatedAt) : null;
   const formattedUpdate =
     updatedAt && !Number.isNaN(updatedAt.getTime())
-      ? format(updatedAt, "d MMMM yyyy", { locale: fr })
+      ? format(updatedAt, 'd MMMM yyyy', { locale: fr })
       : null;
   const amenities = Array.isArray(property.amenities) ? property.amenities : [];
-  const formattedAddress = property.formattedAddress
-    || property.address?.formatted
-    || (typeof property.address === 'string' ? property.address : '');
+  const formattedAddress =
+    property.formattedAddress ||
+    property.address?.formatted ||
+    (typeof property.address === 'string' ? property.address : '');
   const cityLabel = property.address?.city || formattedAddress || property.name;
 
   return (
@@ -295,13 +296,9 @@ export default async function MiniSitePage({ params }) {
               <Sparkles className="h-4 w-4" />
               Séjour sélectionné
             </span>
-            <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-              {property.name}
-            </h1>
+            <h1 className="text-4xl font-semibold leading-tight md:text-5xl">{property.name}</h1>
             {property.description && (
-              <p className="text-lg text-white/90 md:text-xl">
-                {property.description}
-              </p>
+              <p className="text-lg text-white/90 md:text-xl">{property.description}</p>
             )}
             <div className="flex flex-wrap gap-3">
               {highlightCards.map((item) => (
@@ -334,9 +331,7 @@ export default async function MiniSitePage({ params }) {
                 </div>
               )}
               {formattedUpdate && (
-                <span className="text-sm text-white/70">
-                  Dernière mise à jour : {formattedUpdate}
-                </span>
+                <span className="text-sm text-white/70">Dernière mise à jour : {formattedUpdate}</span>
               )}
             </div>
           </div>
@@ -348,8 +343,8 @@ export default async function MiniSitePage({ params }) {
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-900">Vivez une expérience mémorable</h2>
             <p className="text-gray-600">
-              Retrouvez l\'esprit Airbnb dans une expérience personnalisée : atmosphère soignée, confort hôtelier
-              et conseils d\'initiés. Ce mini site se mettra automatiquement à jour lorsque vous connecterez vos
+              Retrouvez l&apos;esprit Airbnb dans une expérience personnalisée : atmosphère soignée, confort hôtelier
+              et conseils d&apos;initiés. Ce mini site se mettra automatiquement à jour lorsque vous connecterez vos
               calendriers via API ou via un lien iCal.
             </p>
             {amenities.length > 0 && (
@@ -398,7 +393,9 @@ export default async function MiniSitePage({ params }) {
                 >
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">{category.label}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">
+                        {category.label}
+                      </p>
                       {category.title && (
                         <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
                       )}
@@ -410,11 +407,7 @@ export default async function MiniSitePage({ params }) {
                       <div className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-900/5 lg:max-w-xl">
                         <AspectRatio ratio={16 / 9}>
                           {isDirectVideoUrl(category.videoUrl) ? (
-                            <video
-                              src={category.videoUrl}
-                              controls
-                              className="h-full w-full object-cover"
-                            />
+                            <video src={category.videoUrl} controls className="h-full w-full object-cover" />
                           ) : (
                             <iframe
                               src={category.videoUrl}
@@ -428,6 +421,7 @@ export default async function MiniSitePage({ params }) {
                       </div>
                     )}
                   </div>
+
                   {category.media.length > 0 && (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                       {category.media.map((media) => (
@@ -475,21 +469,17 @@ export default async function MiniSitePage({ params }) {
                 index === 0
                   ? 'min-h-[260px] md:col-span-7 md:row-span-2 md:min-h-[520px]'
                   : index === 1
-                    ? 'min-h-[220px] md:col-span-5 md:min-h-[280px]'
-                    : index === 2
-                      ? 'min-h-[220px] md:col-span-5 md:min-h-[280px]'
-                      : 'min-h-[180px] md:col-span-3 md:min-h-[220px]'
+                  ? 'min-h-[220px] md:col-span-5 md:min-h-[280px]'
+                  : index === 2
+                  ? 'min-h-[220px] md:col-span-5 md:min-h-[280px]'
+                  : 'min-h-[180px] md:col-span-3 md:min-h-[220px]'
               }`}
             >
               <Image
                 src={photo.url}
                 alt={photo.alt || `Photo ${index + 1} de la propriété`}
                 fill
-                sizes={
-                  index === 0
-                    ? '(min-width: 768px) 58vw, 100vw'
-                    : '(min-width: 768px) 42vw, 100vw'
-                }
+                sizes={index === 0 ? '(min-width: 768px) 58vw, 100vw' : '(min-width: 768px) 42vw, 100vw'}
                 className="object-cover transition-transform duration-500 hover:scale-105"
               />
             </div>
@@ -503,9 +493,8 @@ export default async function MiniSitePage({ params }) {
               <h2 className="text-2xl font-semibold text-gray-900">Disponibilités & synchronisation</h2>
             </div>
             <p className="mt-3 text-gray-600">
-              Connectez vos canaux (Airbnb, Booking.com, PMS, etc.) pour afficher automatiquement les
-              disponibilités et éviter les doubles réservations. Ce module est prêt pour une intégration via API ou
-              par import/export iCal.
+              Connectez vos canaux (Airbnb, Booking.com, PMS, etc.) pour afficher automatiquement les disponibilités et
+              éviter les doubles réservations. Ce module est prêt pour une intégration via API ou par import/export iCal.
             </p>
 
             <div className="mt-6 rounded-2xl border border-dashed border-primary-200 bg-primary-50/50 p-6">
@@ -516,7 +505,8 @@ export default async function MiniSitePage({ params }) {
               </div>
               <div className="mt-3 grid grid-cols-7 gap-2 text-center text-sm">
                 {Array.from({ length: 30 }, (_, index) => index + 1).map((day) => {
-                  const status = day === 4 || day === 5 ? 'reserved' : day === 11 ? 'pending' : day === 18 ? 'blocked' : 'free';
+                  const status =
+                    day === 4 || day === 5 ? 'reserved' : day === 11 ? 'pending' : day === 18 ? 'blocked' : 'free';
                   return (
                     <span
                       key={day}
@@ -524,10 +514,10 @@ export default async function MiniSitePage({ params }) {
                         status === 'reserved'
                           ? 'border-danger-100 bg-danger-50 text-danger-600'
                           : status === 'pending'
-                            ? 'border-warning-100 bg-warning-50 text-warning-700'
-                            : status === 'blocked'
-                              ? 'border-gray-200 bg-gray-100 text-gray-500'
-                              : 'border-primary-100 bg-white text-primary-600'
+                          ? 'border-warning-100 bg-warning-50 text-warning-700'
+                          : status === 'blocked'
+                          ? 'border-gray-200 bg-gray-100 text-gray-500'
+                          : 'border-primary-100 bg-white text-primary-600'
                       }`}
                     >
                       {day}
@@ -565,7 +555,7 @@ export default async function MiniSitePage({ params }) {
                 <div className="rounded-2xl border border-gray-200 bg-white p-5">
                   <p className="text-sm font-semibold text-gray-900">Connexion API</p>
                   <p className="mt-2 text-sm text-gray-600">
-                    Préparez l\'intégration avec Airbnb, Booking.com ou votre PMS via API. Vos réservations seront
+                    Préparez l&apos;intégration avec Airbnb, Booking.com ou votre PMS via API. Vos réservations seront
                     synchronisées en temps réel.
                   </p>
                 </div>
@@ -605,13 +595,11 @@ export default async function MiniSitePage({ params }) {
                 )}
               </div>
             </div>
-            {host?.phone && (
-              <p className="mt-4 text-sm text-gray-600">Téléphone : {host.phone}</p>
-            )}
+            {host?.phone && <p className="mt-4 text-sm text-gray-600">Téléphone : {host.phone}</p>}
             <div className="mt-6 space-y-4 text-sm text-gray-600">
               <p>
-                <span className="font-semibold text-gray-900">Accueil personnalisé :</span> check-in flexible, conseils sur
-                mesure et assistance à tout moment.
+                <span className="font-semibold text-gray-900">Accueil personnalisé :</span> check-in flexible, conseils
+                sur mesure et assistance à tout moment.
               </p>
               <p>
                 <span className="font-semibold text-gray-900">Services complémentaires :</span> ménage hôtelier, panier de
@@ -628,9 +616,7 @@ export default async function MiniSitePage({ params }) {
 
       <footer className="border-t border-gray-200 bg-gray-50 py-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
-          <p>
-            © {new Date().getFullYear()} Checkinly. Mini site généré automatiquement pour {hostName}.
-          </p>
+          <p>© {new Date().getFullYear()} Checkinly. Mini site généré automatiquement pour {hostName}.</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/contact" className="hover:text-primary-600">
               Demander une démo
