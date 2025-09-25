@@ -64,6 +64,7 @@ export default function PropertyDetailsPage() {
   // blocs d'édition complémentaires
   const [isEditingMainInfo, setIsEditingMainInfo] = useState(false);
   const [mainInfoDraft, setMainInfoDraft] = useState({
+    shortDescription: '',
     streetNumber: '',
     street: '',
     complement: '',
@@ -79,6 +80,7 @@ export default function PropertyDetailsPage() {
   });
   const [isSavingMainInfo, setIsSavingMainInfo] = useState(false);
   const [mainInfoError, setMainInfoError] = useState(null);
+  const [mainInfoFieldErrors, setMainInfoFieldErrors] = useState({});
 
   const [isEditingQuickSettings, setIsEditingQuickSettings] = useState(false);
   const [quickSettingsDraft, setQuickSettingsDraft] = useState({
@@ -131,6 +133,34 @@ export default function PropertyDetailsPage() {
 
     return '';
   }, [property]);
+
+  const toPositiveNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  };
+
+  const shortDescriptionValue =
+    property?.shortDescription || property?.general?.shortDescription || property?.description || '';
+  const capacityAdultsValue = toPositiveNumber(
+    property?.general?.capacity?.adults ?? property?.capacity?.adults ?? property?.maxGuests ?? mainInfoDraft.adults,
+    0
+  );
+  const capacityChildrenValue = toPositiveNumber(
+    property?.general?.capacity?.children ?? property?.capacity?.children ?? mainInfoDraft.children,
+    0
+  );
+  const bedroomsValue = toPositiveNumber(
+    property?.general?.bedrooms ?? property?.bedrooms ?? mainInfoDraft.bedrooms,
+    0
+  );
+  const bedsValue = toPositiveNumber(
+    property?.general?.beds ?? property?.beds ?? property?.bedrooms ?? mainInfoDraft.beds,
+    0
+  );
+  const bathroomsValue = toPositiveNumber(
+    property?.general?.bathrooms ?? property?.bathrooms ?? mainInfoDraft.bathrooms,
+    0
+  );
 
   const operations = property?.operations || {};
 
@@ -272,6 +302,7 @@ export default function PropertyDetailsPage() {
       const bathroomsValue = Number(property.general?.bathrooms ?? property.bathrooms ?? 0);
 
       setMainInfoDraft({
+        shortDescription: shortValue?.slice(0, 160) ?? '',
         streetNumber: baseAddress.streetNumber ?? '',
         street: baseAddress.street ?? '',
         complement: baseAddress.complement ?? '',
@@ -746,14 +777,22 @@ export default function PropertyDetailsPage() {
   const handleStartMainInfoEdit = () => {
     if (!property) return;
     setMainInfoError(null);
+    setMainInfoFieldErrors({});
     setIsEditingMainInfo(true);
   };
   const handleCancelMainInfoEdit = () => {
     setIsEditingMainInfo(false);
     setMainInfoError(null);
+    setMainInfoFieldErrors({});
   };
   const handleMainInfoChange = (field, value) => {
     setMainInfoDraft((prev) => ({ ...prev, [field]: value }));
+    setMainInfoFieldErrors((prev) => {
+      if (!prev || !prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
   const handleSaveMainInfo = async () => {
     if (!property) return;
@@ -770,6 +809,37 @@ export default function PropertyDetailsPage() {
       return Number.isFinite(parsed) ? Math.max(parsed, min) : fallback;
     };
 
+    const trimmedShortDescription = mainInfoDraft.shortDescription?.toString().trim() ?? '';
+    const trimmedStreetNumber = mainInfoDraft.streetNumber?.toString().trim() ?? '';
+    const trimmedStreet = mainInfoDraft.street?.toString().trim() ?? '';
+    const trimmedComplement = mainInfoDraft.complement?.toString().trim() ?? '';
+    const trimmedPostalCode = mainInfoDraft.postalCode?.toString().trim() ?? '';
+    const trimmedCity = mainInfoDraft.city?.toString().trim() ?? '';
+    const trimmedCountry = mainInfoDraft.country?.toString().trim() || 'France';
+    const trimmedFormatted =
+      mainInfoDraft.formatted?.toString().trim() ||
+      `${trimmedStreetNumber ? `${trimmedStreetNumber} ` : ''}${trimmedStreet}`.trim();
+
+    const fieldErrors = {};
+
+    if (!trimmedShortDescription) {
+      fieldErrors.shortDescription = 'La description courte est requise (160 caractères max).';
+    } else if (trimmedShortDescription.length > 160) {
+      fieldErrors.shortDescription = 'La description courte doit contenir 160 caractères maximum.';
+    }
+
+    if (!trimmedStreet) {
+      fieldErrors.street = 'Le type et nom de voie sont requis.';
+    }
+    if (!trimmedPostalCode) {
+      fieldErrors.postalCode = 'Le code postal est requis.';
+    } else if (!/^\d{5}$/.test(trimmedPostalCode)) {
+      fieldErrors.postalCode = 'Le code postal doit comporter 5 chiffres.';
+    }
+    if (!trimmedCity) {
+      fieldErrors.city = 'La ville est requise.';
+    }
+
     const adults = parseInteger(mainInfoDraft.adults, { fallback: 1, min: 1 });
     const children = parseInteger(mainInfoDraft.children, { fallback: 0, min: 0 });
     const bedrooms = parseInteger(mainInfoDraft.bedrooms, { fallback: 0, min: 0 });
@@ -777,28 +847,45 @@ export default function PropertyDetailsPage() {
     const bathrooms = parseInteger(mainInfoDraft.bathrooms, { fallback: 0, min: 0 });
 
     if (!Number.isFinite(adults) || adults <= 0) {
-      setMainInfoError('La capacité adultes doit être supérieure ou égale à 1.');
+      fieldErrors.adults = 'La capacité adultes doit être supérieure ou égale à 1.';
+    }
+    if (!Number.isFinite(children) || children < 0) {
+      fieldErrors.children = 'Le nombre d’enfants doit être supérieur ou égal à 0.';
+    }
+    if (!Number.isFinite(bedrooms) || bedrooms < 0) {
+      fieldErrors.bedrooms = 'Le nombre de chambres doit être supérieur ou égal à 0.';
+    }
+    if (!Number.isFinite(beds) || beds < 0) {
+      fieldErrors.beds = 'Le nombre de lits doit être supérieur ou égal à 0.';
+    }
+    if (!Number.isFinite(bathrooms) || bathrooms < 0) {
+      fieldErrors.bathrooms = 'Le nombre de salles de bain doit être supérieur ou égal à 0.';
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setMainInfoFieldErrors(fieldErrors);
+      setMainInfoError('Certaines informations sont manquantes ou invalides.');
       return;
     }
 
     setIsSavingMainInfo(true);
     setMainInfoError(null);
+    setMainInfoFieldErrors({});
 
     const addressOverride = {
-      streetNumber: mainInfoDraft.streetNumber?.trim?.() ?? '',
-      street: mainInfoDraft.street?.trim?.() ?? '',
-      complement: mainInfoDraft.complement?.trim?.() ?? '',
-      postalCode: mainInfoDraft.postalCode?.trim?.() ?? '',
-      city: mainInfoDraft.city?.trim?.() ?? '',
-      country: mainInfoDraft.country?.trim?.() || 'France',
-      formatted:
-        mainInfoDraft.formatted?.trim?.() ||
-        `${mainInfoDraft.streetNumber ? `${mainInfoDraft.streetNumber} ` : ''}${mainInfoDraft.street || ''}`.trim()
+      streetNumber: trimmedStreetNumber,
+      street: trimmedStreet,
+      complement: trimmedComplement,
+      postalCode: trimmedPostalCode,
+      city: trimmedCity,
+      country: trimmedCountry,
+      formatted: trimmedFormatted
     };
 
     try {
       const payload = buildUpdatePayload({
         general: {
+          shortDescription: trimmedShortDescription,
           capacity: { adults, children },
           bedrooms,
           beds,
@@ -825,6 +912,9 @@ export default function PropertyDetailsPage() {
 
       const updated = await response.json();
       setProperty(updated);
+      setShortDescriptionDraft(
+        updated.shortDescription || updated.general?.shortDescription || trimmedShortDescription || shortDescriptionDraft
+      );
       setIsEditingMainInfo(false);
     } catch (e) {
       console.error('Error saving main information:', e);
@@ -1361,129 +1451,254 @@ export default function PropertyDetailsPage() {
                   )}
                 </div>
                 {isEditingMainInfo ? (
-                  <div className="space-y-4">
-                    <div className="grid gap-3 sm:grid-cols-6">
-                      <div className="sm:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">N°</label>
-                        <input
-                          type="text"
-                          value={mainInfoDraft.streetNumber}
-                          onChange={(e) => handleMainInfoChange('streetNumber', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                      <div className="sm:col-span-4">
-                        <label className="text-sm font-medium text-gray-700">Rue</label>
-                        <input
-                          type="text"
-                          value={mainInfoDraft.street}
-                          onChange={(e) => handleMainInfoChange('street', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-6 text-sm">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Complément</label>
-                      <input
-                        type="text"
-                        value={mainInfoDraft.complement}
-                        onChange={(e) => handleMainInfoChange('complement', e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Accroche principale</h3>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Ce texte est repris sur votre mini-site et vos fiches de présentation.
+                          </p>
+                        </div>
+                        <span className="text-xs text-gray-400">{mainInfoDraft.shortDescription?.length ?? 0}/160</span>
+                      </div>
+                      <textarea
+                        value={mainInfoDraft.shortDescription}
+                        onChange={(e) => handleMainInfoChange('shortDescription', e.target.value)}
+                        maxLength={160}
+                        rows={3}
+                        disabled={isSavingMainInfo}
+                        className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                          mainInfoFieldErrors.shortDescription
+                            ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                            : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                        }`}
                       />
+                      {mainInfoFieldErrors.shortDescription ? (
+                        <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.shortDescription}</p>
+                      ) : (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Donnez envie en 160 caractères maximum (ex: « Duplex cosy avec vue sur mer »).
+                        </p>
+                      )}
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-5">
-                      <div className="sm:col-span-2">
-                        <label className="text-sm font-medium text-gray-700">Code postal</label>
-                        <input
-                          type="text"
-                          value={mainInfoDraft.postalCode}
-                          onChange={(e) => handleMainInfoChange('postalCode', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
+
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Adresse du logement</h3>
+                          <p className="mt-1 text-xs text-gray-500">Ces champs sont utilisés pour générer l&apos;adresse affichée.</p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-6">
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">N°</label>
+                            <input
+                              type="text"
+                              value={mainInfoDraft.streetNumber}
+                              onChange={(e) => handleMainInfoChange('streetNumber', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.street
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                          </div>
+                          <div className="sm:col-span-4">
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Rue</label>
+                            <input
+                              type="text"
+                              value={mainInfoDraft.street}
+                              onChange={(e) => handleMainInfoChange('street', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.street
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.street && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.street}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Complément</label>
+                          <input
+                            type="text"
+                            value={mainInfoDraft.complement}
+                            onChange={(e) => handleMainInfoChange('complement', e.target.value)}
+                            disabled={isSavingMainInfo}
+                            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-5">
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Code postal</label>
+                            <input
+                              type="text"
+                              value={mainInfoDraft.postalCode}
+                              onChange={(e) => handleMainInfoChange('postalCode', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.postalCode
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.postalCode && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.postalCode}</p>
+                            )}
+                          </div>
+                          <div className="sm:col-span-3">
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Ville</label>
+                            <input
+                              type="text"
+                              value={mainInfoDraft.city}
+                              onChange={(e) => handleMainInfoChange('city', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.city
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.city && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.city}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Pays</label>
+                          <input
+                            type="text"
+                            value={mainInfoDraft.country}
+                            onChange={(e) => handleMainInfoChange('country', e.target.value)}
+                            disabled={isSavingMainInfo}
+                            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Adresse formatée</label>
+                          <input
+                            type="text"
+                            value={mainInfoDraft.formatted}
+                            onChange={(e) => handleMainInfoChange('formatted', e.target.value)}
+                            disabled={isSavingMainInfo}
+                            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">Optionnel : personnalisez l&apos;affichage (email, PDF...)</p>
+                        </div>
                       </div>
-                      <div className="sm:col-span-3">
-                        <label className="text-sm font-medium text-gray-700">Ville</label>
-                        <input
-                          type="text"
-                          value={mainInfoDraft.city}
-                          onChange={(e) => handleMainInfoChange('city', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
+
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Capacité & pièces</h3>
+                          <p className="mt-1 text-xs text-gray-500">Affichées aux voyageurs sur vos différents canaux.</p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Adultes</label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={mainInfoDraft.adults}
+                              onChange={(e) => handleMainInfoChange('adults', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.adults
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.adults && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.adults}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Enfants</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={mainInfoDraft.children}
+                              onChange={(e) => handleMainInfoChange('children', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.children
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.children && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.children}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div>
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Chambres</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={mainInfoDraft.bedrooms}
+                              onChange={(e) => handleMainInfoChange('bedrooms', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.bedrooms
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.bedrooms && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.bedrooms}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Lits</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={mainInfoDraft.beds}
+                              onChange={(e) => handleMainInfoChange('beds', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.beds
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.beds && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.beds}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium uppercase tracking-wide text-gray-500">Salles de bain</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={mainInfoDraft.bathrooms}
+                              onChange={(e) => handleMainInfoChange('bathrooms', e.target.value)}
+                              disabled={isSavingMainInfo}
+                              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                mainInfoFieldErrors.bathrooms
+                                  ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                  : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                              }`}
+                            />
+                            {mainInfoFieldErrors.bathrooms && (
+                              <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.bathrooms}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Pays</label>
-                      <input
-                        type="text"
-                        value={mainInfoDraft.country}
-                        onChange={(e) => handleMainInfoChange('country', e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Adresse formatée</label>
-                      <input
-                        type="text"
-                        value={mainInfoDraft.formatted}
-                        onChange={(e) => handleMainInfoChange('formatted', e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                      />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Adultes</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={mainInfoDraft.adults}
-                          onChange={(e) => handleMainInfoChange('adults', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
+
+                    {mainInfoError && (
+                      <div className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
+                        {mainInfoError}
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Enfants</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={mainInfoDraft.children}
-                          onChange={(e) => handleMainInfoChange('children', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Chambres</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={mainInfoDraft.bedrooms}
-                          onChange={(e) => handleMainInfoChange('bedrooms', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Lits</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={mainInfoDraft.beds}
-                          onChange={(e) => handleMainInfoChange('beds', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Salles de bain</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={mainInfoDraft.bathrooms}
-                          onChange={(e) => handleMainInfoChange('bathrooms', e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                    </div>
-                    {mainInfoError && <p className="text-sm text-danger-600">{mainInfoError}</p>}
+                    )}
+
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                       <button type="button" onClick={handleCancelMainInfoEdit} className="btn-secondary" disabled={isSavingMainInfo}>
                         Annuler
@@ -1495,33 +1710,73 @@ export default function PropertyDetailsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="mt-1 h-5 w-5 text-primary-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Adresse</p>
-                        <p className="text-gray-600">{formattedAddress || 'Adresse non renseignée'}</p>
+                  <div className="space-y-5">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                      {shortDescriptionValue ? (
+                        <p className="whitespace-pre-line">{shortDescriptionValue}</p>
+                      ) : (
+                        <p className="text-gray-500">Ajoutez une description courte pour présenter rapidement votre logement.</p>
+                      )}
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                          <MapPin className="h-4 w-4 text-primary-600" />
+                          Adresse complète
+                        </div>
+                        <div className="mt-2 space-y-1 text-sm text-gray-600">
+                          <p>{formattedAddress || 'Adresse non renseignée'}</p>
+                          {property?.address?.complement && (
+                            <p className="text-gray-500">Complément : {property?.address?.complement}</p>
+                          )}
+                          {property?.address?.country && <p className="text-gray-500">{property?.address?.country}</p>}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                          <Home className="h-4 w-4 text-primary-600" />
+                          Type de logement
+                        </div>
+                        <p className="mt-2 text-sm text-gray-600">
+                          {PROPERTY_TYPE_LABELS[property?.type] || 'Type non renseigné'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">Nom : {property?.name || 'Non renseigné'}</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Users className="mt-1 h-5 w-5 text-primary-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Capacité maximale</p>
-                        <p className="text-gray-600">{property.maxGuests} invité(s)</p>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <Users className="h-4 w-4 text-primary-600" />
+                          Capacité totale
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-gray-900">{capacityAdultsValue + capacityChildrenValue}</p>
+                        <p className="text-xs text-gray-500">
+                          {capacityAdultsValue} adulte(s) · {capacityChildrenValue} enfant(s)
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Bed className="mt-1 h-5 w-5 text-primary-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Chambres</p>
-                        <p className="text-gray-600">{property.bedrooms}</p>
+                      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <Bed className="h-4 w-4 text-primary-600" />
+                          Chambres
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-gray-900">{bedroomsValue}</p>
+                        <p className="text-xs text-gray-500">Nombre de chambres disponibles</p>
                       </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Bath className="mt-1 h-5 w-5 text-primary-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Salles de bain</p>
-                        <p className="text-gray-600">{property.bathrooms}</p>
+                      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <Home className="h-4 w-4 text-primary-600" />
+                          Lits
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-gray-900">{bedsValue}</p>
+                        <p className="text-xs text-gray-500">Inclut canapés et couchages d&apos;appoint</p>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <Bath className="h-4 w-4 text-primary-600" />
+                          Salles de bain
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-gray-900">{bathroomsValue}</p>
+                        <p className="text-xs text-gray-500">Douche et bain confondus</p>
                       </div>
                     </div>
                   </div>
