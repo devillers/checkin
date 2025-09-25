@@ -17,12 +17,17 @@ import {
   Copy,
   Play,
   Pencil,
-  Loader2
+  Loader2,
+  Check,
+  Info,
+  Search,
+  X
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { EQUIPMENT_GROUPS, EQUIPMENT_OPTION_MAP } from '@/lib/equipment-options';
 
 const PROPERTY_TYPE_LABELS = {
   apartment: 'Appartement',
@@ -103,14 +108,22 @@ export default function PropertyDetailsPage() {
   const [quickSettingsError, setQuickSettingsError] = useState(null);
 
   const [isEditingAmenities, setIsEditingAmenities] = useState(false);
-  const [amenitiesDraft, setAmenitiesDraft] = useState('');
+  const [amenitiesDraft, setAmenitiesDraft] = useState([]);
   const [isSavingAmenities, setIsSavingAmenities] = useState(false);
   const [amenitiesError, setAmenitiesError] = useState(null);
+  const [isEquipmentPickerOpen, setIsEquipmentPickerOpen] = useState(false);
+  const [equipmentSearch, setEquipmentSearch] = useState('');
 
   const [isEditingPhotos, setIsEditingPhotos] = useState(false);
   const [photosDraft, setPhotosDraft] = useState([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [photosError, setPhotosError] = useState(null);
+
+  useEffect(() => {
+    if (!isEquipmentPickerOpen) {
+      setEquipmentSearch('');
+    }
+  }, [isEquipmentPickerOpen]);
 
   const selectedHeroPosition = useMemo(() => {
     for (let categoryIndex = 0; categoryIndex < photosDraft.length; categoryIndex += 1) {
@@ -379,7 +392,11 @@ export default function PropertyDetailsPage() {
         : Array.isArray(property.operations?.equipments)
         ? property.operations.equipments
         : [];
-      setAmenitiesDraft(equipments.join('\n'));
+      setAmenitiesDraft(
+        equipments
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter((item) => item.length > 0)
+      );
     }
 
     if (!isEditingPhotos) {
@@ -400,6 +417,63 @@ export default function PropertyDetailsPage() {
     isEditingAmenities,
     isEditingPhotos
   ]);
+
+  const toggleEquipment = useCallback((value) => {
+    setAmenitiesDraft((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+      return safePrev.includes(value)
+        ? safePrev.filter((item) => item !== value)
+        : [...safePrev, value];
+    });
+  }, []);
+
+  const filteredEquipmentGroups = useMemo(() => {
+    const term = equipmentSearch.trim().toLowerCase();
+    if (!term) {
+      return EQUIPMENT_GROUPS;
+    }
+    return EQUIPMENT_GROUPS.map((group) => {
+      const options = group.options.filter((option) => {
+        const searchable = [option.value, option.description, ...(option.keywords || [])]
+          .join(' ')
+          .toLowerCase();
+        return searchable.includes(term);
+      });
+      return { ...group, options };
+    }).filter((group) => group.options.length > 0);
+  }, [equipmentSearch]);
+
+  const renderSelectedEquipmentChips = useCallback(
+    (withRemove = false) =>
+      (Array.isArray(amenitiesDraft) ? amenitiesDraft : []).map((equipment) => {
+        const option = EQUIPMENT_OPTION_MAP[equipment];
+        const IconComponent = option?.icon || Info;
+        return (
+          <span
+            key={`${equipment}-${withRemove ? 'editable' : 'readonly'}`}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition ${
+              withRemove
+                ? 'border-primary-200 bg-primary-50 text-primary-700 hover:border-primary-300'
+                : 'border-gray-200 bg-gray-50 text-gray-600'
+            }`}
+          >
+            <IconComponent className="h-4 w-4" />
+            <span>{equipment}</span>
+            {withRemove && (
+              <button
+                type="button"
+                onClick={() => toggleEquipment(equipment)}
+                className="rounded-full p-0.5 text-primary-500 transition hover:bg-primary-100 hover:text-primary-700"
+                aria-label={`Retirer ${equipment}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        );
+      }),
+    [amenitiesDraft, toggleEquipment]
+  );
 
   const buildUpdatePayload = useCallback(
     (overrides = {}) => {
@@ -1076,10 +1150,13 @@ export default function PropertyDetailsPage() {
       return;
     }
 
-    const equipments = amenitiesDraft
-      .split(/\r?\n|,/)
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
+    const equipments = Array.from(
+      new Set(
+        (Array.isArray(amenitiesDraft) ? amenitiesDraft : [])
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter((item) => item.length > 0)
+      )
+    );
 
     setIsSavingAmenities(true);
     setAmenitiesError(null);
@@ -1241,8 +1318,9 @@ export default function PropertyDetailsPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <>
+      <DashboardLayout>
+        <div className="space-y-6">
         <div className="flex items-center justify-between">
           <button
             onClick={handleGoBack}
@@ -2089,21 +2167,65 @@ export default function PropertyDetailsPage() {
                 )}
               </div>
               {isEditingAmenities ? (
-                <div className="space-y-3">
-                  <textarea
-                    rows={6}
-                    value={amenitiesDraft}
-                    onChange={(e) => setAmenitiesDraft(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    placeholder="Wi-Fi\nClimatisation\nMachine à café"
-                  />
-                  <p className="text-xs text-gray-500">Saisissez un équipement par ligne ou séparez-les par une virgule.</p>
+                <div className="space-y-4">
+                  <div
+                    className={`rounded-lg border ${
+                      (amenitiesDraft?.length ?? 0) === 0
+                        ? 'border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500'
+                        : 'border-gray-200 bg-white p-4'
+                    }`}
+                  >
+                    {(amenitiesDraft?.length ?? 0) === 0 ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Search className="h-6 w-6 text-gray-400" />
+                        <p>Ajoutez les équipements disponibles pour ce logement.</p>
+                        <button
+                          type="button"
+                          onClick={() => setIsEquipmentPickerOpen(true)}
+                          className="btn-secondary inline-flex items-center"
+                        >
+                          <Search className="mr-2 h-4 w-4" />
+                          Parcourir les équipements
+                        </button>
+                        <p className="text-xs text-gray-400">
+                          Ajoutez les services atypiques dans la description du logement.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap gap-2">{renderSelectedEquipmentChips(true)}</div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsEquipmentPickerOpen(true)}
+                            className="btn-secondary inline-flex items-center"
+                          >
+                            <Search className="mr-2 h-4 w-4" />
+                            Ajouter un équipement
+                          </button>
+                          <span className="text-xs text-gray-500">
+                            Ajoutez les services atypiques dans la description du logement.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {amenitiesError && <p className="text-sm text-danger-600">{amenitiesError}</p>}
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                    <button type="button" onClick={handleCancelAmenitiesEdit} className="btn-secondary" disabled={isSavingAmenities}>
+                    <button
+                      type="button"
+                      onClick={handleCancelAmenitiesEdit}
+                      className="btn-secondary"
+                      disabled={isSavingAmenities}
+                    >
                       Annuler
                     </button>
-                    <button type="button" onClick={handleSaveAmenities} className="btn-primary inline-flex items-center" disabled={isSavingAmenities}>
+                    <button
+                      type="button"
+                      onClick={handleSaveAmenities}
+                      className="btn-primary inline-flex items-center"
+                      disabled={isSavingAmenities}
+                    >
                       {isSavingAmenities && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Enregistrer
                     </button>
@@ -2450,7 +2572,124 @@ export default function PropertyDetailsPage() {
             <p className="text-gray-600">Propriété introuvable.</p>
           </div>
         )}
-      </div>
-    </DashboardLayout>
+        </div>
+      </DashboardLayout>
+
+      {isEquipmentPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sélection des équipements"
+        >
+          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Sélection des équipements</h3>
+                <p className="text-sm text-gray-500">Recherchez un équipement ou parcourez les catégories.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEquipmentPickerOpen(false)}
+                className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Fermer la sélection des équipements"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={equipmentSearch}
+                  onChange={(event) => setEquipmentSearch(event.target.value)}
+                  placeholder="Rechercher un équipement (sauna, jacuzzi, wifi...)"
+                  className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              {filteredEquipmentGroups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                  <Search className="h-10 w-10 text-gray-300" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Aucun résultat</p>
+                    <p className="text-xs text-gray-500">
+                      Aucun équipement ne correspond à « {equipmentSearch} ».
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Ajoutez les services atypiques dans la description du logement.
+                  </p>
+                </div>
+              ) : (
+                filteredEquipmentGroups.map((group) => (
+                  <div key={group.key} className="mb-8 last:mb-0">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{group.label}</h4>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {group.options.map((option) => {
+                        const selected = Array.isArray(amenitiesDraft)
+                          ? amenitiesDraft.includes(option.value)
+                          : false;
+                        const IconComponent = option.icon || Info;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => toggleEquipment(option.value)}
+                            className={`group flex items-start gap-3 rounded-lg border px-3 py-3 text-left transition ${
+                              selected
+                                ? 'border-primary-400 bg-primary-50'
+                                : 'border-gray-200 bg-white hover:border-primary-200 hover:bg-primary-50/40'
+                            }`}
+                          >
+                            <span
+                              className={`mt-0.5 rounded-full border p-2 ${
+                                selected
+                                  ? 'border-primary-300 bg-white text-primary-600'
+                                  : 'border-gray-200 bg-gray-50 text-gray-500 group-hover:border-primary-200 group-hover:text-primary-600'
+                              }`}
+                            >
+                              <IconComponent className="h-4 w-4" />
+                            </span>
+                            <span className="flex-1 text-sm text-gray-700">
+                              <span className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900">{option.value}</span>
+                                {selected && <Check className="h-4 w-4 text-primary-600" />}
+                              </span>
+                              {option.description && (
+                                <span className="mt-1 block text-xs text-gray-500">{option.description}</span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-4 border-t border-gray-200 px-6 py-4">
+              <span className="text-xs text-gray-500">
+                {(amenitiesDraft?.length ?? 0)} équipement(s) sélectionné(s)
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEquipmentPickerOpen(false)}
+                className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-primary-700"
+              >
+                <Check className="h-4 w-4" />
+                Terminer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
