@@ -248,6 +248,10 @@ export default async function MiniSitePage({ params }) {
       ? format(updatedAt, 'd MMMM yyyy', { locale: fr })
       : null;
   const amenities = Array.isArray(property.amenities) ? property.amenities : [];
+  const shortDescription =
+    property.shortDescription ||
+    property.general?.shortDescription ||
+    (property.description ? property.description.slice(0, 160) : '');
   const formattedAddress =
     property.formattedAddress ||
     property.address?.formatted ||
@@ -297,7 +301,11 @@ export default async function MiniSitePage({ params }) {
               Séjour sélectionné
             </span>
             <h1 className="text-4xl font-semibold leading-tight md:text-5xl">{property.name}</h1>
-           
+
+            {shortDescription && (
+              <p className="max-w-2xl text-lg text-white/80">{shortDescription}</p>
+            )}
+
             <div className="flex flex-wrap gap-3">
               {highlightCards.map((item) => (
                 <div
@@ -312,6 +320,32 @@ export default async function MiniSitePage({ params }) {
                 </div>
               ))}
             </div>
+            {amenities.length > 0 && (
+              <div className="rounded-3xl bg-white/10 p-6 shadow-lg backdrop-blur">
+                <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-white/70">
+                  <ShieldCheck className="h-4 w-4" />
+                  Équipements essentiels
+                </div>
+                <div className="flex flex-wrap gap-2 text-sm text-white/80">
+                  {amenities.slice(0, 8).map((amenity) => (
+                    <span
+                      key={amenity}
+                      className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 font-medium shadow-sm backdrop-blur"
+                    >
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                      </span>
+                      {amenity}
+                    </span>
+                  ))}
+                  {amenities.length > 8 && (
+                    <span className="rounded-full bg-white/10 px-3 py-1.5 font-medium text-white/70 backdrop-blur">
+                      + {amenities.length - 8} autres
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-4">
               <a
                 href={cta.href}
