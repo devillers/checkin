@@ -291,14 +291,15 @@ export default function PropertyDetailsPage() {
 
   useEffect(() => {
     if (property?.id && property?.userId && typeof window !== 'undefined') {
-      const originUrl = `${window.location.origin}/sejour/${property.userId}/${property.id}`;
-      setMiniSiteUrl(originUrl);
-
       const publicBaseUrl = (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL || 'https://sejour.checkinly.fr').replace(
         /\/$/,
         ''
       );
-      const slug = property.onlinePresence?.slug || property.slug;
+      const slug = property.onlinePresence?.slug || property.slug || '';
+      const propertySegment = slug || property.id;
+      const originUrl = `${window.location.origin}/sejour/${property.userId}/${propertySegment}`;
+      setMiniSiteUrl(originUrl);
+
       if (slug) {
         setMiniSiteDisplayUrl(`${publicBaseUrl}/${slug}`);
       } else {

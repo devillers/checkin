@@ -46,20 +46,33 @@ const FALLBACK_HOST_AVATAR =
 
 const isDirectVideoUrl = (url) => /\.(mp4|webm|ogg)(?:\?.*)?$/i.test(url ?? '');
 
-async function fetchMiniSiteData(userId, propertyId) {
-  if (!userId || !propertyId) {
+export async function fetchMiniSiteData(userIdParam, propertyParam) {
+  const userId = typeof userIdParam === 'string' ? userIdParam.trim() : '';
+  const propertyId = typeof propertyParam === 'string' ? propertyParam.trim() : '';
+
+  if (!propertyId) {
     return null;
   }
 
   const { db } = await connectDB();
 
-  const property = await db.collection('properties').findOne({ id: propertyId, userId });
+  const propertyQuery = {
+    ...(userId ? { userId } : {}),
+    $or: [
+      { id: propertyId },
+      { slug: propertyId },
+      { 'onlinePresence.slug': propertyId },
+    ],
+  };
+
+  const property = await db.collection('properties').findOne(propertyQuery);
 
   if (!property) {
     return null;
   }
 
-  const host = await db.collection('users').findOne({ id: userId });
+  const resolvedUserId = property.userId || userId;
+  const host = resolvedUserId ? await db.collection('users').findOne({ id: resolvedUserId }) : null;
 
   const { _id, ...propertyData } = property;
   const safeProperty = {
