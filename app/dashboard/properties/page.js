@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home, Plus, MapPin, Users, BarChart3, Trash2 } from 'lucide-react';
-import PropertyCard from '@/components/PropertyCard';
+import PropertyRow from '@/components/PropertyRow';
 import PropertyModal from '@/components/PropertyModal';
 
 const FILTERS = [
@@ -229,9 +229,9 @@ export default function DashboardPropertiesPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="space-y-4">
             {filteredProperties.map((property) => (
-              <PropertyCard
+              <PropertyRow
                 key={property.id}
                 property={property}
                 onEdit={handleEditProperty}
