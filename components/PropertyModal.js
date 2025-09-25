@@ -1038,6 +1038,7 @@ export default function PropertyModal({ property, onClose, onSave }) {
     }
   };
 
+
   const defaultPublicSiteUrl = useMemo(() => {
     const envUrl =
       (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://checkinly.com').trim();
@@ -1061,13 +1062,19 @@ export default function PropertyModal({ property, onClose, onSave }) {
     }
   }, []);
 
+
   const previewUrl = useMemo(() => {
     const slug = formData.onlinePresence.slug?.trim();
     if (!slug) {
       return '';
     }
+
     return `${miniSiteBaseUrl}/${slug}`;
   }, [formData.onlinePresence.slug, miniSiteBaseUrl]);
+
+    return `https://checkinly.com/sejour/${slug}`;
+  }, [formData.onlinePresence.slug]);
+
 
   const handlePreviewClick = useCallback(() => {
     if (!previewUrl) {
