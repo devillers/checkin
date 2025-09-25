@@ -1072,9 +1072,6 @@ export default function PropertyModal({ property, onClose, onSave }) {
     return `${miniSiteBaseUrl}/${slug}`;
   }, [formData.onlinePresence.slug, miniSiteBaseUrl]);
 
-    return `https://checkinly.com/sejour/${slug}`;
-  }, [formData.onlinePresence.slug]);
-
 
   const handlePreviewClick = useCallback(() => {
     if (!previewUrl) {
