@@ -13,6 +13,7 @@ import {
   Wifi,
   ArrowUpRight
 } from 'lucide-react';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { connectDB } from '@/lib/mongodb';
 
 const FALLBACK_GALLERY = [
@@ -40,6 +41,8 @@ const FALLBACK_GALLERY = [
 
 const FALLBACK_HOST_AVATAR =
   'https://images.pexels.com/photos/532220/pexels-photo-532220.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=2';
+
+const isDirectVideoUrl = (url) => /\.(mp4|webm|ogg)(?:\?.*)?$/i.test(url ?? '');
 
 async function fetchMiniSiteData(userId, propertyId) {
   if (!userId || !propertyId) {
@@ -120,6 +123,29 @@ function buildGallery(property) {
   }
 
   return FALLBACK_GALLERY;
+}
+
+function buildMediaCategories(property) {
+  if (!property?.medias?.categories) {
+    return [];
+  }
+
+  return property.medias.categories
+    .map((category, index) => {
+      const order = Number.isFinite(category?.order) ? Number(category.order) : index * 10;
+      const mediaItems = Array.isArray(category?.media) ? category.media : [];
+      const visibleMedia = mediaItems
+        .filter((item) => item?.url && !item.hidden)
+        .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
+
+      return {
+        ...category,
+        order,
+        media: visibleMedia
+      };
+    })
+    .filter((category) => category.media.length > 0 || category.videoUrl)
+    .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
 }
 
 function buildHighlightCards(property) {
@@ -212,6 +238,7 @@ export default async function MiniSitePage({ params }) {
   const heroImage = buildHeroImage(property);
   const gallery = buildGallery(property);
   const highlightCards = buildHighlightCards(property);
+  const mediaCategories = buildMediaCategories(property);
   const hostName = formatHostName(host);
   const cta = buildCta(property, host);
   const icalUrl = extractIcalUrl(property);
@@ -354,6 +381,91 @@ export default async function MiniSitePage({ params }) {
             </div>
           </div>
         </section>
+
+        {mediaCategories.length > 0 && (
+          <section className="space-y-8">
+            <div className="space-y-3">
+              <h2 className="text-2xl font-semibold text-gray-900">Univers & ambiances</h2>
+              <p className="text-gray-600">
+                Explorez les différentes catégories de photos et les capsules vidéo préparées pour vos voyageurs.
+              </p>
+            </div>
+            <div className="space-y-12">
+              {mediaCategories.map((category) => (
+                <div
+                  key={category.id || category.key || category.label}
+                  className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft lg:p-8"
+                >
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">{category.label}</p>
+                      {category.title && (
+                        <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
+                      )}
+                      {category.shortDescription && (
+                        <p className="text-sm text-gray-600">{category.shortDescription}</p>
+                      )}
+                    </div>
+                    {category.videoUrl && (
+                      <div className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-900/5 lg:max-w-xl">
+                        <AspectRatio ratio={16 / 9}>
+                          {isDirectVideoUrl(category.videoUrl) ? (
+                            <video
+                              src={category.videoUrl}
+                              controls
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <iframe
+                              src={category.videoUrl}
+                              title={`Vidéo ${category.label}`}
+                              className="h-full w-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            />
+                          )}
+                        </AspectRatio>
+                      </div>
+                    )}
+                  </div>
+                  {category.media.length > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {category.media.map((media) => (
+                        <figure
+                          key={media.id || media.url}
+                          className="group overflow-hidden rounded-2xl border border-gray-100 bg-white"
+                        >
+                          <div className="relative h-56 w-full bg-gray-100">
+                            <Image
+                              src={media.url}
+                              alt={media.alt || `Photo ${category.label}`}
+                              fill
+                              sizes="(min-width: 1280px) 320px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          </div>
+                          <figcaption className="px-4 py-3">
+                            {media.alt && (
+                              <p className="text-sm font-medium text-gray-900">{media.alt}</p>
+                            )}
+                            {media.credit && (
+                              <p className="mt-1 text-xs text-gray-500">© {media.credit}</p>
+                            )}
+                            {media.isCover && (
+                              <p className="mt-2 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-700">
+                                Photo mise en avant
+                              </p>
+                            )}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="grid gap-4 md:grid-cols-12">
           {gallery.slice(0, 5).map((photo, index) => (

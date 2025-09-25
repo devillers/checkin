@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -15,7 +15,9 @@ import {
   Globe,
   Link2,
   Copy,
-  Play
+  Play,
+  Pencil,
+  Loader2
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Image from 'next/image';
@@ -46,6 +48,14 @@ export default function PropertyDetailsPage() {
   const [miniSiteDisplayUrl, setMiniSiteDisplayUrl] = useState('');
   const [isMiniSiteCopied, setIsMiniSiteCopied] = useState(false);
   const [ownerProfile, setOwnerProfile] = useState(null);
+  const [isEditingShortDescription, setIsEditingShortDescription] = useState(false);
+  const [isEditingLongDescription, setIsEditingLongDescription] = useState(false);
+  const [shortDescriptionDraft, setShortDescriptionDraft] = useState('');
+  const [longDescriptionDraft, setLongDescriptionDraft] = useState('');
+  const [isSavingShortDescription, setIsSavingShortDescription] = useState(false);
+  const [isSavingLongDescription, setIsSavingLongDescription] = useState(false);
+  const [shortDescriptionError, setShortDescriptionError] = useState(null);
+  const [longDescriptionError, setLongDescriptionError] = useState(null);
 
   const formattedAddress = useMemo(() => {
     if (!property) {
@@ -200,6 +210,180 @@ export default function PropertyDetailsPage() {
     }
   }, [property]);
 
+  useEffect(() => {
+    if (!property) {
+      return;
+    }
+
+    const shortValue = property.shortDescription
+      || property.general?.shortDescription
+      || property.description
+      || '';
+    const longValue = property.description
+      || property.general?.longDescription
+      || '';
+
+    if (!isEditingShortDescription) {
+      setShortDescriptionDraft(shortValue);
+    }
+
+    if (!isEditingLongDescription) {
+      setLongDescriptionDraft(longValue);
+    }
+  }, [property, isEditingShortDescription, isEditingLongDescription]);
+
+  const buildUpdatePayload = useCallback((overrides = {}) => {
+    if (!property) {
+      return null;
+    }
+
+    const ensureNumber = (value, fallback) => {
+      const parsed = Number.parseFloat(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+      return fallback;
+    };
+
+    const baseGeneral = property.general || {};
+    const baseCapacity = baseGeneral.capacity || property.capacity || {};
+    const baseShort = baseGeneral.shortDescription ?? property.shortDescription ?? '';
+    const baseLong = baseGeneral.longDescription ?? property.description ?? '';
+
+    const capacityAdults = ensureNumber(
+      overrides.general?.capacity?.adults
+        ?? baseCapacity.adults
+        ?? property.maxGuests
+        ?? 1,
+      1
+    );
+    const capacityChildren = ensureNumber(
+      overrides.general?.capacity?.children
+        ?? baseCapacity.children
+        ?? 0,
+      0
+    );
+
+    const bedrooms = ensureNumber(
+      overrides.general?.bedrooms
+        ?? baseGeneral.bedrooms
+        ?? property.bedrooms
+        ?? 0,
+      0
+    );
+    const beds = ensureNumber(
+      overrides.general?.beds
+        ?? baseGeneral.beds
+        ?? property.beds
+        ?? baseGeneral.bedrooms
+        ?? property.bedrooms
+        ?? 0,
+      0
+    );
+    const bathrooms = ensureNumber(
+      overrides.general?.bathrooms
+        ?? baseGeneral.bathrooms
+        ?? property.bathrooms
+        ?? 0,
+      0
+    );
+
+    const generalOverrides = overrides.general || {};
+    const general = {
+      name: generalOverrides.name ?? baseGeneral.name ?? property.name ?? '',
+      type: generalOverrides.type ?? baseGeneral.type ?? property.type ?? 'apartment',
+      capacity: {
+        adults: capacityAdults,
+        children: capacityChildren
+      },
+      bedrooms,
+      beds,
+      bathrooms,
+      surface: generalOverrides.surface ?? baseGeneral.surface ?? property.surface ?? null,
+      shortDescription: (generalOverrides.shortDescription ?? baseShort)?.trim?.() ?? '',
+      longDescription: (generalOverrides.longDescription ?? baseLong)?.trim?.() ?? ''
+    };
+
+    let address;
+    if (typeof property.address === 'object' && property.address !== null) {
+      address = {
+        streetNumber: property.address.streetNumber ?? '',
+        street: property.address.street ?? '',
+        complement: property.address.complement ?? '',
+        postalCode: property.address.postalCode ?? '',
+        city: property.address.city ?? '',
+        country: property.address.country ?? 'France',
+        latitude: property.address.latitude ?? null,
+        longitude: property.address.longitude ?? null,
+        formatted: property.address.formatted ?? property.formattedAddress ?? ''
+      };
+    } else {
+      address = {
+        streetNumber: '',
+        street: property.formattedAddress || '',
+        complement: '',
+        postalCode: '',
+        city: '',
+        country: 'France',
+        latitude: null,
+        longitude: null,
+        formatted: property.formattedAddress || ''
+      };
+    }
+
+    const addressOverrides = overrides.address || {};
+    address = { ...address, ...addressOverrides };
+
+    const onlinePresence = {
+      airbnbUrl: property.onlinePresence?.airbnbUrl ?? property.airbnbUrl ?? '',
+      bookingUrl: property.onlinePresence?.bookingUrl ?? property.bookingUrl ?? '',
+      slug: property.onlinePresence?.slug ?? property.slug ?? ''
+    };
+
+    const mediasCategories = Array.isArray(property.medias?.categories)
+      ? property.medias.categories.map((category) => ({
+        ...category,
+        media: Array.isArray(category.media)
+          ? category.media.map((item) => ({ ...item }))
+          : []
+      }))
+      : [];
+
+    const operations = property.operations
+      ? {
+        ...property.operations,
+        deposit: property.operations.deposit
+          ? { ...property.operations.deposit }
+          : undefined,
+        cityTax: property.operations.cityTax
+          ? { ...property.operations.cityTax }
+          : undefined
+      }
+      : {};
+
+    if (!operations.deposit) {
+      delete operations.deposit;
+    }
+    if (!operations.cityTax) {
+      delete operations.cityTax;
+    }
+
+    const seo = {
+      metaTitle: property.seo?.metaTitle ?? '',
+      metaDescription: property.seo?.metaDescription ?? '',
+      ogImageId: property.seo?.ogImageId ?? ''
+    };
+
+    return {
+      general,
+      address,
+      onlinePresence: { ...onlinePresence, ...(overrides.onlinePresence || {}) },
+      medias: { categories: overrides.medias?.categories ?? mediasCategories },
+      operations: { ...operations, ...(overrides.operations || {}) },
+      seo: { ...seo, ...(overrides.seo || {}) }
+    };
+  }, [property]);
+
   const heroPhoto = useMemo(() => {
     if (!property) {
       return null;
@@ -320,6 +504,215 @@ export default function PropertyDetailsPage() {
   };
 
   const displayMiniSiteUrl = miniSiteDisplayUrl || miniSiteUrl;
+
+  const handleStartShortDescriptionEdit = () => {
+    if (!property) {
+      return;
+    }
+    setShortDescriptionDraft(
+      property.shortDescription
+        || property.general?.shortDescription
+        || property.description
+        || ''
+    );
+    setShortDescriptionError(null);
+    setIsEditingShortDescription(true);
+  };
+
+  const handleCancelShortDescriptionEdit = () => {
+    if (!property) {
+      setIsEditingShortDescription(false);
+      return;
+    }
+    setShortDescriptionDraft(
+      property.shortDescription
+        || property.general?.shortDescription
+        || property.description
+        || ''
+    );
+    setShortDescriptionError(null);
+    setIsEditingShortDescription(false);
+  };
+
+  const handleSaveShortDescription = async () => {
+    if (!property) {
+      return;
+    }
+
+    const trimmed = shortDescriptionDraft.trim();
+
+    if (!trimmed) {
+      setShortDescriptionError('La description courte est obligatoire.');
+      return;
+    }
+
+    if (trimmed.length > 160) {
+      setShortDescriptionError('La description courte doit contenir 160 caractères maximum.');
+      return;
+    }
+
+    const token = localStorage.getItem('auth-token');
+
+    if (!token) {
+      router.replace('/auth/login');
+      return;
+    }
+
+    try {
+      setIsSavingShortDescription(true);
+      setShortDescriptionError(null);
+
+      const payload = buildUpdatePayload({
+        general: {
+          shortDescription: trimmed,
+          longDescription: property.general?.longDescription
+            ?? property.description
+            ?? ''
+        }
+      });
+
+      if (!payload) {
+        throw new Error('Impossible de préparer la mise à jour.');
+      }
+
+      const response = await fetch(`/api/properties/${property.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.status === 401) {
+        router.replace('/auth/login');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.message || 'Impossible de sauvegarder la description courte');
+      }
+
+      const updated = await response.json();
+      setProperty(updated);
+      setShortDescriptionDraft(
+        updated.shortDescription
+          || updated.general?.shortDescription
+          || trimmed
+      );
+      setLongDescriptionDraft(
+        updated.description
+          || updated.general?.longDescription
+          || longDescriptionDraft
+      );
+      setIsEditingShortDescription(false);
+    } catch (error) {
+      console.error('Error saving short description:', error);
+      setShortDescriptionError(error.message || 'Impossible de sauvegarder la description courte');
+    } finally {
+      setIsSavingShortDescription(false);
+    }
+  };
+
+  const handleStartLongDescriptionEdit = () => {
+    if (!property) {
+      return;
+    }
+    setLongDescriptionDraft(
+      property.description
+        || property.general?.longDescription
+        || ''
+    );
+    setLongDescriptionError(null);
+    setIsEditingLongDescription(true);
+  };
+
+  const handleCancelLongDescriptionEdit = () => {
+    if (!property) {
+      setIsEditingLongDescription(false);
+      return;
+    }
+    setLongDescriptionDraft(
+      property.description
+        || property.general?.longDescription
+        || ''
+    );
+    setLongDescriptionError(null);
+    setIsEditingLongDescription(false);
+  };
+
+  const handleSaveLongDescription = async () => {
+    if (!property) {
+      return;
+    }
+
+    const trimmed = longDescriptionDraft.trim();
+    const currentShort = property.shortDescription
+      || property.general?.shortDescription
+      || '';
+
+    const token = localStorage.getItem('auth-token');
+
+    if (!token) {
+      router.replace('/auth/login');
+      return;
+    }
+
+    try {
+      setIsSavingLongDescription(true);
+      setLongDescriptionError(null);
+
+      const payload = buildUpdatePayload({
+        general: {
+          shortDescription: currentShort,
+          longDescription: trimmed
+        }
+      });
+
+      if (!payload) {
+        throw new Error('Impossible de préparer la mise à jour.');
+      }
+
+      const response = await fetch(`/api/properties/${property.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.status === 401) {
+        router.replace('/auth/login');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.message || 'Impossible de sauvegarder la description longue');
+      }
+
+      const updated = await response.json();
+      setProperty(updated);
+      setLongDescriptionDraft(
+        updated.description
+          || updated.general?.longDescription
+          || trimmed
+      );
+      setShortDescriptionDraft(
+        updated.shortDescription
+          || updated.general?.shortDescription
+          || shortDescriptionDraft
+      );
+      setIsEditingLongDescription(false);
+    } catch (error) {
+      console.error('Error saving long description:', error);
+      setLongDescriptionError(error.message || 'Impossible de sauvegarder la description longue');
+    } finally {
+      setIsSavingLongDescription(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -458,6 +851,134 @@ export default function PropertyDetailsPage() {
                     </p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="card space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Description courte</h2>
+                    <p className="text-sm text-gray-500">
+                      Partagez une accroche percutante (160 caractères max).
+                    </p>
+                  </div>
+                  {!isEditingShortDescription && (
+                    <button
+                      type="button"
+                      onClick={handleStartShortDescriptionEdit}
+                      className="btn-secondary inline-flex items-center"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Modifier
+                    </button>
+                  )}
+                </div>
+                {isEditingShortDescription ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={shortDescriptionDraft}
+                      onChange={(event) => setShortDescriptionDraft(event.target.value)}
+                      maxLength={160}
+                      rows={4}
+                      className={`form-textarea ${shortDescriptionError ? 'border-danger-500' : ''}`}
+                    />
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{shortDescriptionDraft.length}/160 caractères</span>
+                      {shortDescriptionError && (
+                        <span className="text-danger-600">{shortDescriptionError}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelShortDescriptionEdit}
+                        className="btn-secondary"
+                        disabled={isSavingShortDescription}
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveShortDescription}
+                        className="btn-primary inline-flex items-center"
+                        disabled={isSavingShortDescription}
+                      >
+                        {isSavingShortDescription && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Enregistrer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-line text-sm text-gray-600">
+                    {property.shortDescription
+                      || property.general?.shortDescription
+                      || 'Ajoutez une description courte pour présenter rapidement votre logement.'}
+                  </p>
+                )}
+              </div>
+
+              <div className="card space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Description longue</h2>
+                    <p className="text-sm text-gray-500">
+                      Décrivez en détail l&apos;expérience proposée dans le logement.
+                    </p>
+                  </div>
+                  {!isEditingLongDescription && (
+                    <button
+                      type="button"
+                      onClick={handleStartLongDescriptionEdit}
+                      className="btn-secondary inline-flex items-center"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Modifier
+                    </button>
+                  )}
+                </div>
+                {isEditingLongDescription ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={longDescriptionDraft}
+                      onChange={(event) => setLongDescriptionDraft(event.target.value)}
+                      rows={8}
+                      className={`form-textarea ${longDescriptionError ? 'border-danger-500' : ''}`}
+                    />
+                    {longDescriptionError && (
+                      <p className="text-xs text-danger-600">{longDescriptionError}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelLongDescriptionEdit}
+                        className="btn-secondary"
+                        disabled={isSavingLongDescription}
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveLongDescription}
+                        className="btn-primary inline-flex items-center"
+                        disabled={isSavingLongDescription}
+                      >
+                        {isSavingLongDescription && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Enregistrer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-line text-sm text-gray-600">
+                    {property.description
+                      || property.general?.longDescription
+                      || 'Ajoutez une description détaillée pour donner envie à vos voyageurs.'}
+                  </p>
+                )}
               </div>
             </div>
 
