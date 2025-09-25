@@ -1,3 +1,5 @@
+// app/sejour/[userId]/[propertyId]/page.js
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -302,9 +304,11 @@ export default async function MiniSitePage({ params }) {
             </span>
             <h1 className="text-4xl font-semibold leading-tight md:text-5xl">{property.name}</h1>
 
+
             {shortDescription && (
               <p className="max-w-2xl text-lg text-white/80">{shortDescription}</p>
             )}
+
 
             <div className="flex flex-wrap gap-3">
               {highlightCards.map((item) => (
@@ -375,8 +379,8 @@ export default async function MiniSitePage({ params }) {
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-900">Vivez une expérience mémorable</h2>
             <div className="text-gray-600">
-              {property.description && (
-              <p className="text-lg text-justify w-full">{property.description}</p>
+              {property.shortDescription && (
+              <p className="text-lg text-justify w-full">{property.shortDescription}</p>
             )}
             </div>
             {amenities.length > 0 && (
@@ -400,9 +404,11 @@ export default async function MiniSitePage({ params }) {
           <section className="space-y-8">
             <div className="space-y-3">
               <h2 className="text-2xl font-semibold text-gray-900">Univers & ambiances</h2>
-              <p className="text-gray-600">
-                Explorez les différentes catégories de photos et les capsules vidéo préparées pour vos voyageurs.
-              </p>
+             
+                 {property.description && (
+              <p className="text-lg w-full text-justify text-gray-600 leading-loose">{property.description}</p>
+            )}
+              
             </div>
             <div className="space-y-12">
               {mediaCategories.map((category) => (
