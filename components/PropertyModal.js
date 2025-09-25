@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Eye,
   Globe,
   GripVertical,
   Home,
@@ -25,6 +26,7 @@ import {
   Ruler,
   Save,
   Search,
+  Share2,
   Trash2,
   Upload,
   Users,
@@ -36,6 +38,7 @@ import {
   EQUIPMENT_OPTION_MAP,
   EQUIPMENT_OPTIONS
 } from '@/lib/equipment-options';
+import { toast } from '@/hooks/use-toast';
 
 const PROPERTY_TYPES = [
   { value: 'apartment', label: 'Appartement' },
@@ -1035,6 +1038,105 @@ export default function PropertyModal({ property, onClose, onSave }) {
     }
   };
 
+  const defaultPublicSiteUrl = useMemo(() => {
+    const envUrl =
+      (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://checkinly.com').trim();
+    if (!envUrl) {
+      return 'https://checkinly.com';
+    }
+    return envUrl.replace(/\/$/, '');
+  }, []);
+
+  const [miniSiteBaseUrl, setMiniSiteBaseUrl] = useState(() => `${defaultPublicSiteUrl}/sejour`);
+
+  const miniSiteBaseDisplay = useMemo(() => miniSiteBaseUrl.replace(/^https?:\/\//, ''), [miniSiteBaseUrl]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const origin = window.location.origin?.replace(/\/$/, '');
+    if (origin) {
+      setMiniSiteBaseUrl(`${origin}/sejour`);
+    }
+  }, []);
+
+  const previewUrl = useMemo(() => {
+    const slug = formData.onlinePresence.slug?.trim();
+    if (!slug) {
+      return '';
+    }
+    return `${miniSiteBaseUrl}/${slug}`;
+  }, [formData.onlinePresence.slug, miniSiteBaseUrl]);
+
+  const handlePreviewClick = useCallback(() => {
+    if (!previewUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'Mini-site indisponible',
+        description: 'Définissez un slug pour prévisualiser le mini-site.'
+      });
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, [previewUrl]);
+
+  const handleShareClick = useCallback(async () => {
+    if (!previewUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'Adresse indisponible',
+        description: 'Définissez un slug avant de partager le mini-site.'
+      });
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const title = formData.general.name?.trim() || 'Mini-site Checkinly';
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({
+          title,
+          url: previewUrl
+        });
+        toast({
+          title: 'Mini-site partagé',
+          description: "Le lien a été partagé avec succès."
+        });
+        return;
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(previewUrl);
+        toast({
+          title: 'Lien copié',
+          description: "Adresse du mini-site copiée dans le presse-papiers."
+        });
+        return;
+      }
+
+      window.prompt('Adresse du mini-site', previewUrl);
+      toast({
+        title: 'Lien prêt à partager',
+        description: "Copiez l'adresse pour la partager."
+      });
+    } catch (error) {
+      console.error('Share error', error);
+      toast({
+        variant: 'destructive',
+        title: 'Partage impossible',
+        description: "Impossible de partager le lien pour le moment."
+      });
+    }
+  }, [formData.general.name, previewUrl]);
+
   const filteredEquipmentGroups = useMemo(() => {
     const term = equipmentSearch.trim().toLowerCase();
     if (!term) {
@@ -1106,10 +1208,34 @@ export default function PropertyModal({ property, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
         <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {property ? 'Modifier la propriété' : 'Nouvelle propriété'}
-            </h2>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {property ? 'Modifier la propriété' : 'Nouvelle propriété'}
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePreviewClick}
+                  disabled={!previewUrl}
+                  className="rounded-full border border-gray-200 p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Prévisualiser le mini-site"
+                  title={previewUrl ? 'Prévisualiser le mini-site' : 'Définissez un slug pour prévisualiser'}
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareClick}
+                  disabled={!previewUrl}
+                  className="rounded-full border border-gray-200 p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Partager l'adresse du mini-site"
+                  title={previewUrl ? "Partager l'adresse du mini-site" : 'Définissez un slug pour partager'}
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
             <p className="text-sm text-gray-500">Centralisez toutes les informations de votre logement.</p>
           </div>
           <button
@@ -1577,7 +1703,9 @@ export default function PropertyModal({ property, onClose, onSave }) {
                       </button>
                     </div>
                     {errors['onlinePresence.slug'] && <p className="mt-1 text-xs text-danger-600">{errors['onlinePresence.slug']}</p>}
-                    <p className="mt-1 text-xs text-gray-500">URL finale : checkinly.com/sejour/{formData.onlinePresence.slug || 'slug'}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      URL finale : {miniSiteBaseDisplay}/{formData.onlinePresence.slug || 'slug'}
+                    </p>
                   </div>
                 </div>
               )}
