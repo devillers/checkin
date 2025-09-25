@@ -339,7 +339,7 @@ export default async function MiniSitePage({ params }) {
       </div>
 
       <main className="mx-auto max-w-6xl space-y-16 px-6 py-16">
-        <section className="grid gap-8 md:grid-cols-[2fr,1fr]">
+        <section className="grid gap-8 md:grid-cols-[4fr,1fr]">
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-900">Vivez une expérience mémorable</h2>
             <p className="text-gray-600">
@@ -361,20 +361,7 @@ export default async function MiniSitePage({ params }) {
             )}
           </div>
 
-          <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-primary-100 p-6 shadow-soft">
-            <div className="flex items-center gap-3 text-primary-700">
-              <ShieldCheck className="h-6 w-6" />
-              <h3 className="text-lg font-semibold">Réservation sécurisée</h3>
-            </div>
-            <p className="mt-3 text-sm text-primary-800">
-              Paiements protégés, voyageurs vérifiés et support 7/7 pour des séjours en toute confiance.
-            </p>
-            <div className="mt-4 space-y-2 text-sm text-primary-700">
-              <p>• Confirmation instantanée ou sur-mesure</p>
-              <p>• Synchronisation automatique des calendriers</p>
-              <p>• Gestion des cautions et dépôts simplifiée</p>
-            </div>
-          </div>
+       
         </section>
 
         {mediaCategories.length > 0 && (
