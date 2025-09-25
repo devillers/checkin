@@ -1,23 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Home, 
-  Plus, 
-  MapPin, 
-  Users, 
-  Bed, 
+import {
+  Home,
+  Plus,
+  MapPin,
+  Users,
+  Bed,
   Bath,
   Settings,
   BarChart3,
-  Edit,
-  Eye,
-  Calendar,
-  Key
+  Edit
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-import PropertyCard from '@/components/PropertyCard';
 import PropertyModal from '@/components/PropertyModal';
 
 export default function PropertiesPage() {
@@ -75,6 +72,80 @@ export default function PropertiesPage() {
     if (filter === 'inactive') return property.status === 'inactive';
     return true;
   });
+
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'active':
+        return 'bg-success-100 text-success-800';
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800';
+      case 'maintenance':
+        return 'bg-warning-100 text-warning-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'inactive':
+        return 'Inactive';
+      case 'maintenance':
+        return 'Maintenance';
+      default:
+        return 'Inconnue';
+    }
+  };
+
+  const getPhotoUrl = (photo) => {
+    if (!photo) {
+      return '';
+    }
+
+    if (typeof photo === 'string') {
+      return photo;
+    }
+
+    if (typeof photo === 'object') {
+      return photo.thumbnailUrl || photo.url || '';
+    }
+
+    return '';
+  };
+
+  const getFormattedAddress = (property) => {
+    if (!property) {
+      return '';
+    }
+
+    if (typeof property.address === 'string') {
+      return property.address;
+    }
+
+    if (property.formattedAddress) {
+      return property.formattedAddress;
+    }
+
+    if (property.address?.formatted) {
+      return property.address.formatted;
+    }
+
+    if (property.address && typeof property.address === 'object') {
+      const { streetNumber, street, complement, postalCode, city, country } = property.address;
+      return [
+        [streetNumber, street].filter(Boolean).join(' '),
+        complement,
+        [postalCode, city].filter(Boolean).join(' '),
+        country
+      ]
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    return '';
+  };
 
   const stats = {
     total: properties.length,
@@ -171,7 +242,7 @@ export default function PropertiesPage() {
           ))}
         </div>
 
-        {/* Properties Grid */}
+        {/* Properties Table */}
         {filteredProperties.length === 0 ? (
           <div className="card text-center py-12">
             <Home className="h-16 w-16 mx-auto mb-4 text-gray-300" />
@@ -179,7 +250,7 @@ export default function PropertiesPage() {
               {filter === 'all' ? 'Aucune propriété' : `Aucune propriété ${filter === 'active' ? 'active' : 'inactive'}`}
             </h3>
             <p className="text-gray-600 mb-6">
-              {filter === 'all' 
+              {filter === 'all'
                 ? 'Commencez par ajouter votre première propriété à gérer'
                 : 'Aucune propriété ne correspond à ce filtre'
               }
@@ -195,17 +266,124 @@ export default function PropertiesPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProperties.map((property) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                onEdit={handleEditProperty}
-                onView={(property) => router.push(`/properties/${property.id}`)}
-                onCalendar={(property) => router.push(`/dashboard/calendrier?property=${property.id}`)}
-                onSettings={(property) => router.push(`/properties/${property.id}/settings`)}
-              />
-            ))}
+          <div className="card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Propriété
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Localisation
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Capacité
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Performance
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {filteredProperties.map((property) => {
+                    const photoUrl = getPhotoUrl(property.profilePhoto);
+                    const formattedAddress = getFormattedAddress(property);
+
+                    return (
+                      <tr key={property.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-4">
+                            <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                              {photoUrl ? (
+                                <Image
+                                  src={photoUrl}
+                                  alt={`Photo de ${property.name}`}
+                                  width={48}
+                                  height={48}
+                                  className="h-12 w-12 rounded-full object-cover"
+                                  sizes="48px"
+                                  unoptimized
+                                />
+                              ) : (
+                                <span className="text-sm font-semibold text-gray-500">
+                                  {property.name?.[0] || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => router.push(`/properties/${property.id}`)}
+                                  className="text-left text-sm font-semibold text-gray-900 hover:text-primary-600 focus:outline-none"
+                                >
+                                  {property.name || 'Sans titre'}
+                                </button>
+                                <span className={`badge ${getStatusStyles(property.status)}`}>
+                                  {getStatusLabel(property.status)}
+                                </span>
+                              </div>
+                              {property.reference && (
+                                <p className="text-xs text-gray-500 mt-1">Réf. {property.reference}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                            <span>{formattedAddress || 'Adresse non renseignée'}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-4 text-sm text-gray-700">
+                            <div className="flex items-center">
+                              <Users className="h-4 w-4 text-gray-400" />
+                              <span className="ml-2">{property.maxGuests ?? '-'}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Bed className="h-4 w-4 text-gray-400" />
+                              <span className="ml-2">{property.bedrooms ?? '-'}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Bath className="h-4 w-4 text-gray-400" />
+                              <span className="ml-2">{property.bathrooms ?? '-'}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">CA total</span>
+                              <span className="font-semibold text-gray-900">{property.stats?.totalRevenue || 0}€</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Note</span>
+                              <span className="font-semibold text-gray-900">
+                                {property.stats?.averageRating ? `${property.stats.averageRating}/5` : '-'}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleEditProperty(property)}
+                            className="btn-primary inline-flex items-center px-3 py-2 text-sm"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Modifier
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
