@@ -4,12 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  Eye,
   Home,
   MapPin,
   Users,
   Bed,
   Bath,
-  Settings,
   Calendar,
   Key,
   Globe,
@@ -1332,22 +1332,31 @@ export default function PropertyDetailsPage() {
           </button>
 
           {property && (
-            <div className="flex items-center gap-3">
-              <button onClick={handleOpenCalendar} className="btn-secondary inline-flex items-center">
-                <Calendar className="mr-2 h-4 w-4" />
-                Calendrier
-              </button>
+            <div className="flex items-center gap-2">
               <button
                 onClick={handlePublish}
                 disabled={!miniSiteUrl}
-                className="btn-secondary inline-flex items-center border-primary-200 text-primary-700 hover:bg-primary-50"
+                className="btn-icon border-primary-200 text-primary-700 hover:bg-primary-50"
+                title="Voir le mini-site"
               >
-                <Globe className="mr-2 h-4 w-4" />
-                Publier
+                <Eye className="h-5 w-5" />
+                <span className="sr-only">Voir le mini-site</span>
               </button>
-              <button onClick={handleOpenSettings} className="btn-primary inline-flex items-center">
-                <Settings className="mr-2 h-4 w-4" />
-                Paramètres
+              <button
+                onClick={handleOpenCalendar}
+                className="btn-icon"
+                title="Ouvrir le calendrier"
+              >
+                <Calendar className="h-5 w-5" />
+                <span className="sr-only">Calendrier</span>
+              </button>
+              <button
+                onClick={handleOpenSettings}
+                className="btn-icon bg-primary-600 text-white border-primary-600 hover:bg-primary-700"
+                title="Modifier la propriété"
+              >
+                <Pencil className="h-5 w-5" />
+                <span className="sr-only">Modifier la propriété</span>
               </button>
             </div>
           )}
