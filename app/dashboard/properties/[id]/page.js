@@ -31,7 +31,8 @@ import {
 
   Mail,
   Images,
-  Upload
+  Upload,
+  Wifi
 
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -176,7 +177,9 @@ export default function PropertyDetailsPage() {
     children: '0',
     bedrooms: '0',
     beds: '0',
-    bathrooms: '0'
+    bathrooms: '0',
+    wifiName: '',
+    wifiPassword: ''
   });
   const [isSavingMainInfo, setIsSavingMainInfo] = useState(false);
   const [mainInfoError, setMainInfoError] = useState(null);
@@ -297,6 +300,24 @@ export default function PropertyDetailsPage() {
     property?.general?.bathrooms ?? property?.bathrooms ?? mainInfoDraft.bathrooms,
     0
   );
+  const wifiNameValueRaw =
+    property?.general?.wifi?.name ??
+    property?.general?.wifiName ??
+    property?.wifi?.name ??
+    property?.wifiName ??
+    mainInfoDraft.wifiName ??
+    '';
+  const wifiPasswordValueRaw =
+    property?.general?.wifi?.password ??
+    property?.general?.wifiPassword ??
+    property?.wifi?.password ??
+    property?.wifiPassword ??
+    mainInfoDraft.wifiPassword ??
+    '';
+  const wifiNameValue =
+    wifiNameValueRaw === null || wifiNameValueRaw === undefined ? '' : String(wifiNameValueRaw);
+  const wifiPasswordValue =
+    wifiPasswordValueRaw === null || wifiPasswordValueRaw === undefined ? '' : String(wifiPasswordValueRaw);
 
   const operations = property?.operations || {};
 
@@ -437,6 +458,15 @@ export default function PropertyDetailsPage() {
       const bedroomsValue = Number(property.general?.bedrooms ?? property.bedrooms ?? 0);
       const bedsValue = Number(property.general?.beds ?? property.beds ?? property.bedrooms ?? 0);
       const bathroomsValue = Number(property.general?.bathrooms ?? property.bathrooms ?? 0);
+      const baseWifi =
+        typeof property.general?.wifi === 'object' && property.general?.wifi !== null ? property.general.wifi : {};
+      const toStringValue = (value) => (value === null || value === undefined ? '' : String(value));
+      const wifiNameValue = toStringValue(
+        baseWifi.name ?? property.general?.wifiName ?? property.wifi?.name ?? property.wifiName ?? ''
+      );
+      const wifiPasswordValue = toStringValue(
+        baseWifi.password ?? property.general?.wifiPassword ?? property.wifi?.password ?? property.wifiPassword ?? ''
+      );
 
       setMainInfoDraft({
         shortDescription: shortValue?.slice(0, 160) ?? '',
@@ -451,7 +481,9 @@ export default function PropertyDetailsPage() {
         children: Number.isFinite(childrenValue) ? String(childrenValue) : '0',
         bedrooms: Number.isFinite(bedroomsValue) ? String(bedroomsValue) : '0',
         beds: Number.isFinite(bedsValue) ? String(bedsValue) : '0',
-        bathrooms: Number.isFinite(bathroomsValue) ? String(bathroomsValue) : '0'
+        bathrooms: Number.isFinite(bathroomsValue) ? String(bathroomsValue) : '0',
+        wifiName: wifiNameValue,
+        wifiPassword: wifiPasswordValue
       });
     }
 
@@ -606,6 +638,33 @@ export default function PropertyDetailsPage() {
       );
 
       const generalOverrides = overrides.general || {};
+      const wifiOverrides = generalOverrides.wifi || {};
+      const wifiNameSource =
+        wifiOverrides.name ??
+        generalOverrides.wifiName ??
+        baseGeneral.wifi?.name ??
+        baseGeneral.wifiName ??
+        property?.wifi?.name ??
+        property?.wifiName ??
+        '';
+      const wifiPasswordSource =
+        wifiOverrides.password ??
+        generalOverrides.wifiPassword ??
+        baseGeneral.wifi?.password ??
+        baseGeneral.wifiPassword ??
+        property?.wifi?.password ??
+        property?.wifiPassword ??
+        '';
+      const wifi = {
+        name:
+          wifiNameSource === null || wifiNameSource === undefined
+            ? ''
+            : String(wifiNameSource),
+        password:
+          wifiPasswordSource === null || wifiPasswordSource === undefined
+            ? ''
+            : String(wifiPasswordSource)
+      };
       const general = {
         name: generalOverrides.name ?? baseGeneral.name ?? property.name ?? '',
         type: generalOverrides.type ?? baseGeneral.type ?? property.type ?? 'apartment',
@@ -615,7 +674,8 @@ export default function PropertyDetailsPage() {
         bathrooms,
         surface: generalOverrides.surface ?? baseGeneral.surface ?? property.surface ?? null,
         shortDescription: (generalOverrides.shortDescription ?? baseShort)?.trim?.() ?? '',
-        longDescription: (generalOverrides.longDescription ?? baseLong)?.trim?.() ?? ''
+        longDescription: (generalOverrides.longDescription ?? baseLong)?.trim?.() ?? '',
+        wifi
       };
 
       let address;
@@ -1157,6 +1217,8 @@ export default function PropertyDetailsPage() {
     const trimmedFormatted =
       mainInfoDraft.formatted?.toString().trim() ||
       `${trimmedStreetNumber ? `${trimmedStreetNumber} ` : ''}${trimmedStreet}`.trim();
+    const trimmedWifiName = mainInfoDraft.wifiName?.toString().trim() ?? '';
+    const trimmedWifiPassword = mainInfoDraft.wifiPassword?.toString().trim() ?? '';
 
     const fieldErrors = {};
 
@@ -1176,6 +1238,14 @@ export default function PropertyDetailsPage() {
     }
     if (!trimmedCity) {
       fieldErrors.city = 'La ville est requise.';
+    }
+
+    if (trimmedWifiName.length > 120) {
+      fieldErrors.wifiName = 'Le nom du réseau Wi-Fi doit contenir 120 caractères maximum.';
+    }
+
+    if (trimmedWifiPassword.length > 120) {
+      fieldErrors.wifiPassword = 'Le mot de passe Wi-Fi doit contenir 120 caractères maximum.';
     }
 
     const adults = parseInteger(mainInfoDraft.adults, { fallback: 1, min: 1 });
@@ -1227,7 +1297,11 @@ export default function PropertyDetailsPage() {
           capacity: { adults, children },
           bedrooms,
           beds,
-          bathrooms
+          bathrooms,
+          wifi: {
+            name: trimmedWifiName,
+            password: trimmedWifiPassword
+          }
         },
         address: addressOverride
       });
@@ -2562,6 +2636,54 @@ export default function PropertyDetailsPage() {
                             )}
                           </div>
                         </div>
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-semibold text-gray-900">Wi-Fi</h3>
+                          <p className="text-xs text-gray-500">
+                            Partagez ces informations avec vos voyageurs sur le guide et vos supports.
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Nom du réseau
+                              </label>
+                              <input
+                                type="text"
+                                value={mainInfoDraft.wifiName}
+                                onChange={(e) => handleMainInfoChange('wifiName', e.target.value)}
+                                disabled={isSavingMainInfo}
+                                maxLength={120}
+                                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                  mainInfoFieldErrors.wifiName
+                                    ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                    : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                                }`}
+                              />
+                              {mainInfoFieldErrors.wifiName && (
+                                <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.wifiName}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Mot de passe
+                              </label>
+                              <input
+                                type="text"
+                                value={mainInfoDraft.wifiPassword}
+                                onChange={(e) => handleMainInfoChange('wifiPassword', e.target.value)}
+                                disabled={isSavingMainInfo}
+                                maxLength={120}
+                                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                  mainInfoFieldErrors.wifiPassword
+                                    ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500'
+                                    : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500'
+                                }`}
+                              />
+                              {mainInfoFieldErrors.wifiPassword && (
+                                <p className="mt-1 text-xs text-danger-600">{mainInfoFieldErrors.wifiPassword}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -2649,6 +2771,22 @@ export default function PropertyDetailsPage() {
                         </div>
                         <p className="mt-2 text-2xl font-semibold text-gray-900">{bathroomsValue}</p>
                         <p className="text-xs text-gray-500">Douche et bain confondus</p>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <Wifi className="h-4 w-4 text-primary-600" />
+                        Wi-Fi
+                      </div>
+                      <div className="mt-2 space-y-1 text-sm text-gray-600">
+                        <p>
+                          <span className="font-medium text-gray-700">Nom du réseau :</span>{' '}
+                          {wifiNameValue || 'Non renseigné'}
+                        </p>
+                        <p>
+                          <span className="font-medium text-gray-700">Mot de passe :</span>{' '}
+                          {wifiPasswordValue || 'Non renseigné'}
+                        </p>
                       </div>
                     </div>
                   </div>

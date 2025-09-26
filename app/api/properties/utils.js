@@ -111,6 +111,16 @@ export function validateAndNormalizePropertyPayload(data = {}) {
 
     const longDescription = safeTrim(general.longDescription);
 
+    const wifiName = safeTrim(general.wifiName ?? general.wifi?.name);
+    if (wifiName.length > 120) {
+      throw new ValidationError('Le nom du réseau Wi-Fi doit contenir 120 caractères maximum');
+    }
+
+    const wifiPassword = safeTrim(general.wifiPassword ?? general.wifi?.password);
+    if (wifiPassword.length > 120) {
+      throw new ValidationError('Le mot de passe Wi-Fi doit contenir 120 caractères maximum');
+    }
+
     const capacityAdults = toPositiveInteger(general.capacity?.adults ?? general.adults, { min: 1, fallback: 1 });
     const capacityChildren = toPositiveInteger(general.capacity?.children ?? general.children, { min: 0, fallback: 0 });
 
@@ -367,7 +377,11 @@ export function validateAndNormalizePropertyPayload(data = {}) {
         bathrooms,
         surface,
         shortDescription,
-        longDescription
+        longDescription,
+        wifi: {
+          name: wifiName,
+          password: wifiPassword
+        }
       },
       address: normalizedAddress,
       formattedAddress,
@@ -398,7 +412,13 @@ export function validateAndNormalizePropertyPayload(data = {}) {
       slug,
       profilePhoto,
       descriptionPhotos,
-      addressLabel: formattedAddress
+      addressLabel: formattedAddress,
+      wifi: {
+        name: wifiName,
+        password: wifiPassword
+      },
+      wifiName,
+      wifiPassword
     };
 
     return { normalizedData };
