@@ -174,7 +174,7 @@ export default function DashboardLayout({ children }) {
               {isProfileDropdownOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                   <Link
-                    href="/dashboard/settings/profile"
+                    href="/settings/profile"
                     className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
@@ -182,7 +182,7 @@ export default function DashboardLayout({ children }) {
                     Mon profil
                   </Link>
                   <Link
-                    href="/dashboard/settings"
+                    href="/settings"
                     className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
