@@ -2,9 +2,9 @@ const CACHE_NAME = 'checkinly-v1.0.0';
 const urlsToCache = [
   '/',
   '/dashboard',
-  '/inventory',
-  '/guests',
-  '/deposits',
+  '/dashboard/inventory',
+  '/dashboard/guests',
+  '/dashboard/deposits',
   '/offline',
   '/manifest.json',
   '/icons/icon-192x192.png',

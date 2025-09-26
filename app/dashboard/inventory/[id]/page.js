@@ -168,7 +168,7 @@ export default function InventoryDetailsPage() {
 
           {inventory && (
             <button
-              onClick={() => router.push(`/inventory/${inventoryId}/edit`)}
+              onClick={() => router.push(`/dashboard/inventory/${inventoryId}/edit`)}
               className="btn-primary inline-flex items-center"
             >
               <Edit className="h-4 w-4 mr-2" />
@@ -195,7 +195,7 @@ export default function InventoryDetailsPage() {
                 Vérifiez l&apos;identifiant ou retournez à la liste des inventaires.
               </p>
             <button
-              onClick={() => router.push('/inventory')}
+              onClick={() => router.push('/dashboard/inventory')}
               className="btn-primary"
             >
               Retour à la liste

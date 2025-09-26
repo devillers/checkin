@@ -240,12 +240,12 @@ export default function DashboardPropertiesPage() {
                 key={property.id}
                 property={property}
                 onEdit={handleEditProperty}
-                onView={(currentProperty) => router.push(`/properties/${currentProperty.id}`)}
+                onView={(currentProperty) => router.push(`/dashboard/properties/${currentProperty.id}`)}
                 onCalendar={(currentProperty) =>
                   router.push(`/dashboard/calendrier?property=${currentProperty.id}`)
                 }
                 onSettings={(currentProperty) =>
-                  router.push(`/properties/${currentProperty.id}/settings`)
+                  router.push(`/dashboard/properties/${currentProperty.id}/settings`)
                 }
                 onDelete={handleDeleteProperty}
               />

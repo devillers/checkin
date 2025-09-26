@@ -55,7 +55,7 @@ export async function POST(request, { params }) {
       id: newInventoryId,
       status: 'pending',
       progress: 0,
-      qrCodeUrl: `${baseUrl}/inventory/${newInventoryId}/fill`,
+      qrCodeUrl: `${baseUrl}/dashboard/inventory/${newInventoryId}/fill`,
       signature: null,
       photos: Array.isArray(existingPhotos) ? [...existingPhotos] : [],
       createdAt: now,

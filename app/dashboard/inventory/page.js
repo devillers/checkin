@@ -82,15 +82,15 @@ export default function InventoryPage() {
   };
 
   const handleCreateInventory = () => {
-    router.push('/inventory/new');
+    router.push('/dashboard/inventory/new');
   };
 
   const handleViewInventory = (inventory) => {
-    router.push(`/inventory/${inventory.id}`);
+    router.push(`/dashboard/inventory/${inventory.id}`);
   };
 
   const handleEditInventory = (inventory) => {
-    router.push(`/inventory/${inventory.id}/edit`);
+    router.push(`/dashboard/inventory/${inventory.id}/edit`);
   };
 
   const handleDuplicateInventory = async (inventory) => {

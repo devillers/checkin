@@ -16,19 +16,19 @@ export default function WelcomeModal({ onClose }) {
       title: 'Créez vos inventaires',
       content: 'Commencez par créer des inventaires détaillés pour chacune de vos propriétés. Ajoutez des photos, notations et commentaires.',
       action: 'Créer un inventaire',
-      href: '/inventory/new'
+      href: '/dashboard/inventory/new'
     },
     {
       title: 'Gérez vos guests',
       content: 'Ajoutez vos invités, suivez leurs séjours et automatisez le processus de check-in/check-out avec QR codes.',
       action: 'Ajouter un guest',
-      href: '/guests/new'
+      href: '/dashboard/guests/new'
     },
     {
       title: 'Configurez Stripe',
       content: 'Connectez votre compte Stripe pour gérer automatiquement les cautions et pré-autorisations.',
       action: 'Configurer Stripe',
-      href: '/settings/payments'
+      href: '/dashboard/settings'
     }
   ];
 

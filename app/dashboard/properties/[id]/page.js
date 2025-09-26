@@ -706,8 +706,8 @@ export default function PropertyDetailsPage() {
     return matches.length >= 2 ? `${matches[0]}${matches[1]}` : matches[0] || initialsSource.charAt(0).toUpperCase();
   }, [ownerProfile]);
 
-  const handleGoBack = () => router.push('/properties');
-  const handleOpenSettings = () => property?.id && router.push(`/properties/${property.id}/settings`);
+  const handleGoBack = () => router.push('/dashboard/properties');
+  const handleOpenSettings = () => property?.id && router.push(`/dashboard/properties/${property.id}/settings`);
   const handleOpenCalendar = () => property?.id && router.push(`/dashboard/calendrier?property=${property.id}`);
   const handlePublish = () => miniSiteUrl && window.open(miniSiteUrl, '_blank', 'noopener,noreferrer');
 

@@ -55,7 +55,7 @@ export default function NewGuestPage() {
                 des documents et automatiser la communication avant leur arrivée.
               </p>
               <button
-                onClick={() => router.push('/guests')}
+                onClick={() => router.push('/dashboard/guests')}
                 className="mt-4 btn-secondary"
               >
                 Retour à la liste des invités

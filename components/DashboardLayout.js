@@ -78,22 +78,22 @@ export default function DashboardLayout({ children }) {
   const baseNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
-    { name: 'Inventaires', href: '/inventory', icon: FileText },
+    { name: 'Inventaires', href: '/dashboard/inventory', icon: FileText },
     { name: 'Guests', href: '/dashboard/guests', icon: Users },
     { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
     { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
-    { name: "Guide d'arrivée", href: '/guidebook', icon: BookOpen },
-    { name: 'Paramètres', href: '/settings', icon: Settings },
+    { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
+    { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
   ];
 
   const baseMobileNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
-    { name: 'Inventaires', href: '/inventory', icon: FileText },
+    { name: 'Inventaires', href: '/dashboard/inventory', icon: FileText },
     { name: 'Guests', href: '/dashboard/guests', icon: Users },
     { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
     { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
-    { name: "Guide d'arrivée", href: '/guidebook', icon: BookOpen },
+    { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
   ];
 
   const superAdminEntry = {
@@ -174,7 +174,7 @@ export default function DashboardLayout({ children }) {
               {isProfileDropdownOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                   <Link
-                    href="/settings/profile"
+                    href="/dashboard/settings/profile"
                     className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
@@ -182,7 +182,7 @@ export default function DashboardLayout({ children }) {
                     Mon profil
                   </Link>
                   <Link
-                    href="/settings"
+                    href="/dashboard/settings"
                     className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
