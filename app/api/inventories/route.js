@@ -146,7 +146,7 @@ export async function POST(request) {
       dueDate: dueDate ? new Date(dueDate) : null,
       rooms: rooms || [],
       progress: 0,
-      qrCodeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/inventory/${inventoryId}/fill`,
+      qrCodeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/inventory/${inventoryId}/fill`,
       signature: null,
       photos: [],
       createdAt: new Date(),

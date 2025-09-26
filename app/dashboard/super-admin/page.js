@@ -398,13 +398,13 @@ export default function SuperAdminDashboard() {
   const handleQuickAction = (actionId) => {
     switch (actionId) {
       case 'billing':
-        router.push('/settings');
+        router.push('/dashboard/settings');
         break;
       case 'growth':
         router.push('/dashboard');
         break;
       case 'support':
-        router.push('/settings');
+        router.push('/dashboard/settings');
         break;
       case 'onboarding':
         router.push('/dashboard/properties');

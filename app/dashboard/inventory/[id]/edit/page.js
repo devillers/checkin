@@ -300,7 +300,7 @@ export default function EditInventoryPage() {
       }
 
       setSubmitMessage('Inventaire mis à jour avec succès');
-      router.push(`/inventory/${inventoryId}`);
+      router.push(`/dashboard/inventory/${inventoryId}`);
     } catch (error) {
       console.error('Error updating inventory', error);
       setErrors({ submit: error.message });
@@ -709,7 +709,7 @@ export default function EditInventoryPage() {
             <div className="flex items-center justify-end space-x-4">
               <button
                 type="button"
-                onClick={() => router.push(`/inventory/${inventoryId}`)}
+                onClick={() => router.push(`/dashboard/inventory/${inventoryId}`)}
                 className="btn-secondary"
                 disabled={isSubmitting}
               >

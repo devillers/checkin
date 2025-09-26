@@ -206,7 +206,7 @@ export default function GuidebookPage() {
       };
 
       const encoded = encodeGuideData(payload);
-      const url = `${window.location.origin}/guidebook/view?data=${encodeURIComponent(encoded)}`;
+      const url = `${window.location.origin}/dashboard/guidebook/view?data=${encodeURIComponent(encoded)}`;
       const qr = await QRCode.toDataURL(url, {
         margin: 1,
         width: 480,

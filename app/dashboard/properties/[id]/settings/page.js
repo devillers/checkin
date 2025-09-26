@@ -98,7 +98,7 @@ export default function PropertySettingsPage() {
   }, [propertyId, router, token]);
 
   const handleGoBack = () => {
-    router.push(property ? `/properties/${property.id}` : '/properties');
+    router.push(property ? `/dashboard/properties/${property.id}` : '/dashboard/properties');
   };
 
   const handleInputChange = (event) => {

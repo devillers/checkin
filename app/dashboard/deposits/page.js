@@ -46,7 +46,7 @@ export default function DepositsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Link
-            href="dashboard/deposits/perceived"
+            href="/dashboard/deposits/perceived"
             className="card group p-5 flex flex-col justify-between hover:border-primary-200 transition"
           >
             <div className="flex items-center justify-between">

@@ -36,7 +36,7 @@
       "name": "Nouvel inventaire",
       "short_name": "Inventaire",
       "description": "Créer un nouvel inventaire",
-      "url": "/inventory/new",
+      "url": "/dashboard/inventory/new",
       "icons": [{ "src": "/icons/inventory.png", "sizes": "96x96" }]
     }
   ]

@@ -198,7 +198,7 @@ export default function NewInventoryPage() {
 
       if (response.ok) {
         const inventory = await response.json();
-        router.push(`/inventory/${inventory.id}`);
+        router.push(`/dashboard/inventory/${inventory.id}`);
       } else {
         const error = await response.json();
         setErrors({ submit: error.message || 'Erreur lors de la création' });

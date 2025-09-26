@@ -125,7 +125,7 @@ export default function DashboardPage() {
   const handleQuickAction = (action) => {
     switch (action) {
       case 'new-inventory':
-        router.push('/inventory/new');
+        router.push('/dashboard/inventory/new');
         break;
       case 'new-guest':
         router.push('/dashboard/guests');

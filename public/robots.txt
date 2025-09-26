@@ -8,9 +8,9 @@ Allow: /legal/privacy
 Allow: /legal/terms
 
 Disallow: /dashboard
-Disallow: /inventory
-Disallow: /guests
-Disallow: /deposits
+Disallow: /dashboard/inventory
+Disallow: /dashboard/guests
+Disallow: /dashboard/deposits
 Disallow: /api/
 Disallow: /admin
 Disallow: /auth
