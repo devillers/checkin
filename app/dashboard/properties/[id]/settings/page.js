@@ -171,7 +171,7 @@ export default function PropertySettingsPage() {
   };
 
   return (
-    <DashboardLayout>
+   
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <button
@@ -366,7 +366,7 @@ export default function PropertySettingsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    
   );
 }
 

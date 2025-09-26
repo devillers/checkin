@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
     { name: 'Inventaires', href: '/inventory', icon: FileText },
     { name: 'Guests', href: '/dashboard/guests', icon: Users },
-    { name: 'Cautions', href: '/deposits', icon: CreditCard },
+    { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
     { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
     { name: "Guide d'arrivée", href: '/guidebook', icon: BookOpen },
     { name: 'Paramètres', href: '/settings', icon: Settings },
@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
     { name: 'Inventaires', href: '/inventory', icon: FileText },
     { name: 'Guests', href: '/dashboard/guests', icon: Users },
-    { name: 'Cautions', href: '/deposits', icon: CreditCard },
+    { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
     { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
     { name: "Guide d'arrivée", href: '/guidebook', icon: BookOpen },
   ];

@@ -1,3 +1,8 @@
+// import { redirect } from 'next/navigation';
+
+// export default function PropertiesPage() {
+//   redirect('/dashboard/properties');
+// }
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';

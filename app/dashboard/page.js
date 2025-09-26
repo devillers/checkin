@@ -131,7 +131,7 @@ export default function DashboardPage() {
         router.push('/dashboard/guests');
         break;
       case 'view-deposits':
-        router.push('/deposits');
+        router.push('/dashboard/deposits');
         break;
       case 'calendar':
         router.push('/dashboard/calendrier');

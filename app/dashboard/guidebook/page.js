@@ -13,7 +13,7 @@ import {
   Sparkles,
   Wand2
 } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
+
 import GuidebookGuestView from '@/components/GuidebookGuestView';
 
 const initialFormState = {
@@ -253,7 +253,7 @@ export default function GuidebookPage() {
   };
 
   return (
-    <DashboardLayout>
+
       <div className="px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="w-full lg:w-2/5">
@@ -517,6 +517,6 @@ export default function GuidebookPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+   
   );
 }

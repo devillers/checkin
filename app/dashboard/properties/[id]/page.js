@@ -1320,7 +1320,7 @@ export default function PropertyDetailsPage() {
 
   return (
     <>
-      <DashboardLayout>
+     
         <div className="space-y-6">
         <div className="flex items-center justify-between">
           <button
@@ -2583,7 +2583,7 @@ export default function PropertyDetailsPage() {
           </div>
         )}
         </div>
-      </DashboardLayout>
+    
 
       {isEquipmentPickerOpen && (
         <div

@@ -24,16 +24,16 @@ export default function DepositsPage() {
 
   if (isCheckingAuth) {
     return (
-      <DashboardLayout>
+     
         <div className="flex items-center justify-center h-64">
           <div className="loading-spinner"></div>
         </div>
-      </DashboardLayout>
+    
     );
   }
 
   return (
-    <DashboardLayout>
+    
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -46,7 +46,7 @@ export default function DepositsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Link
-            href="/deposits/perceived"
+            href="dashboard/deposits/perceived"
             className="card group p-5 flex flex-col justify-between hover:border-primary-200 transition"
           >
             <div className="flex items-center justify-between">
@@ -96,6 +96,6 @@ export default function DepositsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    
   );
 }

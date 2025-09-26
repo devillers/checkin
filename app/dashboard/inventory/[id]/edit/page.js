@@ -310,7 +310,7 @@ export default function EditInventoryPage() {
   };
 
   return (
-    <DashboardLayout>
+   
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center space-x-4">
           <button
@@ -722,6 +722,6 @@ export default function EditInventoryPage() {
           </form>
         )}
       </div>
-    </DashboardLayout>
+   
   );
 }
