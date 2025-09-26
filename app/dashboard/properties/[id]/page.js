@@ -30,7 +30,8 @@ import {
   Smartphone,
 
   Mail,
-  Images
+  Images,
+  Upload
 
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -39,6 +40,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { EQUIPMENT_GROUPS, EQUIPMENT_OPTION_MAP } from '@/lib/equipment-options';
+import { v4 as uuidv4 } from 'uuid';
 import { PROPERTY_CALENDARS } from '@/lib/property-calendar-data';
 
 const PROPERTY_TYPE_LABELS = {
@@ -211,6 +213,9 @@ export default function PropertyDetailsPage() {
   const [photosDraft, setPhotosDraft] = useState([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [photosError, setPhotosError] = useState(null);
+  const [isUploadingCategory, setIsUploadingCategory] = useState({});
+  const [photoUploadErrors, setPhotoUploadErrors] = useState({});
+  const [replacingMedia, setReplacingMedia] = useState({});
   const gallerySectionRef = useRef(null);
 
   useEffect(() => {
@@ -1432,11 +1437,15 @@ export default function PropertyDetailsPage() {
   // --- Photos
   const handleStartPhotosEdit = () => {
     setPhotosError(null);
+    setPhotoUploadErrors({});
     setIsEditingPhotos(true);
   };
   const handleCancelPhotosEdit = () => {
     setIsEditingPhotos(false);
     setPhotosError(null);
+    setPhotoUploadErrors({});
+    setIsUploadingCategory({});
+    setReplacingMedia({});
   };
   const handlePhotoCategoryChange = (index, field, value) => {
     setPhotosDraft((prev) =>
@@ -1492,6 +1501,195 @@ export default function PropertyDetailsPage() {
       })
     );
   };
+  const handlePhotoUpload = async (categoryIndex, fileList) => {
+    const category = photosDraft[categoryIndex];
+    if (!category) return;
+
+    const files = Array.from(fileList || []).filter((file) => file?.type?.startsWith('image/'));
+    const categoryKey = category.id || category.key || String(categoryIndex);
+
+    if (files.length === 0) {
+      if (fileList && fileList.length > 0) {
+        setPhotoUploadErrors((prev) => ({
+          ...prev,
+          [categoryKey]: 'Format de fichier non supporté'
+        }));
+      }
+      return;
+    }
+
+    setIsUploadingCategory((prev) => ({ ...prev, [categoryKey]: true }));
+    setPhotoUploadErrors((prev) => {
+      const next = { ...prev };
+      delete next[categoryKey];
+      return next;
+    });
+
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Authentification requise');
+      }
+
+      const uploads = [];
+      for (const file of files) {
+        const payload = new FormData();
+        payload.append('file', file);
+        const folderId = property?.id || propertyId || 'galleries';
+        payload.append('folder', `properties/${folderId}`);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: payload
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.url) {
+          throw new Error(result?.message || 'Erreur lors du téléversement');
+        }
+
+        uploads.push({
+          id: uuidv4(),
+          url: result.url,
+          thumbnailUrl: result.thumbnailUrl || '',
+          alt: '',
+          credit: '',
+          hidden: false,
+          isHero: false,
+          isCover: false,
+          publicId: result.publicId || undefined,
+          format: result.format || undefined
+        });
+      }
+
+      setPhotosDraft((prev) =>
+        prev.map((cat, index) => {
+          if (index !== categoryIndex) return cat;
+          const mediaList = Array.isArray(cat.media) ? cat.media : [];
+          return {
+            ...cat,
+            media: [...mediaList, ...uploads]
+          };
+        })
+      );
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      setPhotoUploadErrors((prev) => ({
+        ...prev,
+        [categoryKey]: error.message || 'Erreur lors du téléversement'
+      }));
+    } finally {
+      setIsUploadingCategory((prev) => {
+        const next = { ...prev };
+        delete next[categoryKey];
+        return next;
+      });
+    }
+  };
+  const handlePhotoReplace = async (categoryIndex, mediaIndex, fileList) => {
+    const category = photosDraft[categoryIndex];
+    if (!category) return;
+
+    const mediaList = Array.isArray(category.media) ? category.media : [];
+    const mediaItem = mediaList[mediaIndex];
+    if (!mediaItem) return;
+
+    const files = Array.from(fileList || []).filter((file) => file?.type?.startsWith('image/'));
+    const file = files[0];
+    const categoryKey = category.id || category.key || String(categoryIndex);
+    if (!file) {
+      if (fileList && fileList.length > 0) {
+        setPhotoUploadErrors((prev) => ({
+          ...prev,
+          [categoryKey]: 'Format de fichier non supporté'
+        }));
+      }
+      return;
+    }
+
+    const mediaKey = mediaItem.id || `${categoryKey}-${mediaIndex}`;
+    setReplacingMedia((prev) => ({ ...prev, [mediaKey]: true }));
+    setPhotoUploadErrors((prev) => {
+      const next = { ...prev };
+      delete next[categoryKey];
+      return next;
+    });
+
+    const previousPublicId = mediaItem.publicId;
+
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Authentification requise');
+      }
+
+      const payload = new FormData();
+      payload.append('file', file);
+      const folderId = property?.id || propertyId || 'galleries';
+      payload.append('folder', `properties/${folderId}`);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: payload
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result?.url) {
+        throw new Error(result?.message || 'Erreur lors du téléversement');
+      }
+
+      setPhotosDraft((prev) =>
+        prev.map((cat, index) => {
+          if (index !== categoryIndex) return cat;
+          const currentMedia = Array.isArray(cat.media) ? cat.media : [];
+          const updatedMedia = currentMedia.map((item, idx) => {
+            if (idx !== mediaIndex) return item;
+            return {
+              ...item,
+              url: result.url,
+              thumbnailUrl: result.thumbnailUrl || '',
+              publicId: result.publicId || item.publicId,
+              format: result.format || item.format
+            };
+          });
+          return { ...cat, media: updatedMedia };
+        })
+      );
+
+      if (previousPublicId && previousPublicId !== result.publicId) {
+        try {
+          await fetch('/api/upload', {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ publicId: previousPublicId })
+          });
+        } catch (deleteError) {
+          console.error('Failed to delete previous media:', deleteError);
+        }
+      }
+    } catch (error) {
+      console.error('Photo replace error:', error);
+      setPhotoUploadErrors((prev) => ({
+        ...prev,
+        [categoryKey]: error.message || 'Erreur lors du téléversement'
+      }));
+    } finally {
+      setReplacingMedia((prev) => {
+        const next = { ...prev };
+        delete next[mediaKey];
+        return next;
+      });
+    }
+  };
   const handleSavePhotos = async () => {
     if (!property) return;
 
@@ -1544,6 +1742,9 @@ export default function PropertyDetailsPage() {
       const updated = await response.json();
       setProperty(updated);
       setIsEditingPhotos(false);
+      setPhotoUploadErrors({});
+      setIsUploadingCategory({});
+      setReplacingMedia({});
     } catch (e) {
       console.error('Error saving medias:', e);
       setPhotosError(e.message || 'Impossible de sauvegarder les médias');
@@ -2838,47 +3039,91 @@ export default function PropertyDetailsPage() {
                           galeries voyageurs et vos supports marketing.
                         </p>
                       </div>
-                      {photosDraft.map((category, categoryIndex) => (
-                        <div key={category.id || category.key || categoryIndex} className="card space-y-4">
-                          <div className="grid gap-3 sm:grid-cols-2">
+                      {photosDraft.map((category, categoryIndex) => {
+                        const categoryKey = category.id || category.key || String(categoryIndex);
+                        return (
+                          <div key={category.id || category.key || categoryIndex} className="card space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-sm font-medium text-gray-700">Libellé</label>
+                                <input
+                                  type="text"
+                                  value={category.label || ''}
+                                  onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'label', e.target.value)}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-700">Titre</label>
+                                <input
+                                  type="text"
+                                  value={category.title || ''}
+                                  onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'title', e.target.value)}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                />
+                              </div>
+                            </div>
                             <div>
-                              <label className="text-sm font-medium text-gray-700">Libellé</label>
-                              <input
-                                type="text"
-                                value={category.label || ''}
-                                onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'label', e.target.value)}
+                              <label className="text-sm font-medium text-gray-700">Description courte</label>
+                              <textarea
+                                rows={3}
+                                value={category.shortDescription || ''}
+                                onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'shortDescription', e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                               />
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-gray-700">Titre</label>
+                              <label className="text-sm font-medium text-gray-700">Lien vidéo</label>
                               <input
-                                type="text"
-                                value={category.title || ''}
-                                onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'title', e.target.value)}
+                                type="url"
+                                value={category.videoUrl || ''}
+                                onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'videoUrl', e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                placeholder="https://..."
                               />
                             </div>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-gray-700">Description courte</label>
-                            <textarea
-                              rows={3}
-                              value={category.shortDescription || ''}
-                              onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'shortDescription', e.target.value)}
-                              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-gray-700">Lien vidéo</label>
-                            <input
-                              type="url"
-                              value={category.videoUrl || ''}
-                              onChange={(e) => handlePhotoCategoryChange(categoryIndex, 'videoUrl', e.target.value)}
-                              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                              placeholder="https://..."
-                            />
-                          </div>
+
+                            <div
+                              className="flex flex-col gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"
+                              onDragOver={(event) => {
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = 'copy';
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                if (event.dataTransfer.files?.length) {
+                                  handlePhotoUpload(categoryIndex, event.dataTransfer.files);
+                                }
+                              }}
+                            >
+                              <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm transition hover:border-primary-400 hover:text-primary-700">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    handlePhotoUpload(categoryIndex, event.target.files);
+                                    event.target.value = '';
+                                  }}
+                                />
+                                {isUploadingCategory[categoryKey] ? (
+                                  <>
+                                    <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
+                                    Téléversement…
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="h-5 w-5 text-primary-500" />
+                                    Déposer ou cliquer pour ajouter des photos
+                                  </>
+                                )}
+                              </label>
+                              <p className="text-xs text-gray-500">Formats acceptés : JPG, PNG, WebP, HEIC.</p>
+                              {photoUploadErrors[categoryKey] && (
+                                <p className="text-xs text-danger-600">{photoUploadErrors[categoryKey]}</p>
+                              )}
+                            </div>
 
                           <div className="space-y-4">
                             {Array.isArray(category.media) && category.media.length > 0 ? (
@@ -2891,10 +3136,23 @@ export default function PropertyDetailsPage() {
                                   !selectedCoverPosition ||
                                   (selectedCoverPosition.categoryIndex === categoryIndex &&
                                     selectedCoverPosition.mediaIndex === mediaIndex);
+                                const mediaKey = mediaItem.id || `${categoryKey}-${mediaIndex}`;
 
                                 return (
                                   <div key={mediaItem.id || mediaItem.url || mediaIndex} className="grid gap-4 sm:grid-cols-[180px_1fr]">
-                                  <div className="relative h-32 w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-100">
+                                  <div
+                                      className="group relative h-32 w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-100"
+                                      onDragOver={(event) => {
+                                        event.preventDefault();
+                                        event.dataTransfer.dropEffect = 'copy';
+                                      }}
+                                      onDrop={(event) => {
+                                        event.preventDefault();
+                                        if (event.dataTransfer.files?.length) {
+                                          handlePhotoReplace(categoryIndex, mediaIndex, event.dataTransfer.files);
+                                        }
+                                      }}
+                                    >
                                     {mediaItem.url ? (
                                       <Image
                                         src={mediaItem.url}
@@ -2909,6 +3167,25 @@ export default function PropertyDetailsPage() {
                                         Aucune image
                                       </div>
                                     )}
+                                    <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/60 px-4 text-center text-xs font-medium text-white opacity-0 transition focus-within:opacity-100 group-hover:opacity-100">
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(event) => {
+                                          handlePhotoReplace(categoryIndex, mediaIndex, event.target.files);
+                                          event.target.value = '';
+                                        }}
+                                      />
+                                      {replacingMedia[mediaKey] ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Mise à jour…
+                                        </>
+                                      ) : (
+                                        'Déposer ou cliquer pour remplacer'
+                                      )}
+                                    </label>
                                   </div>
                                   <div className="space-y-3">
                                     <div>
@@ -2986,8 +3263,9 @@ export default function PropertyDetailsPage() {
                               <p className="text-sm text-gray-500">Aucune photo dans cette catégorie.</p>
                             )}
                           </div>
-                        </div>
-                      ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">Aucune galerie disponible pour le moment.</p>
