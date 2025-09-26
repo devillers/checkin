@@ -239,7 +239,7 @@ export async function DELETE(request, { params }) {
 
     const deleteResult = await db.collection('properties').findOneAndDelete({ id, userId: user.id });
 
-    if (!deleteResult.value) {
+    if (!deleteResult || !deleteResult.value) {
       return NextResponse.json(
         { message: 'Propriété introuvable' },
         { status: 404 }
@@ -253,7 +253,7 @@ export async function DELETE(request, { params }) {
       action: 'deleted',
       details: {
         propertyId: id,
-        propertyName: deleteResult.value.name
+        propertyName: deleteResult.value.name ?? deleteResult.value.general?.name ?? ''
       },
       timestamp: new Date()
     });
