@@ -102,7 +102,11 @@ function createDefaultFormData() {
       bathrooms: 1,
       surface: '',
       shortDescription: '',
-      longDescription: ''
+      longDescription: '',
+      wifi: {
+        name: '',
+        password: ''
+      }
     },
     address: {
       streetNumber: '',
@@ -223,6 +227,30 @@ function mapPropertyToFormData(property) {
     surface: property.general?.surface ?? property.surface ?? '',
     shortDescription: property.general?.shortDescription ?? property.shortDescription ?? property.description?.slice(0, 160) ?? '',
     longDescription: property.general?.longDescription ?? property.description ?? ''
+  };
+
+  const wifiFromGeneral =
+    property.general?.wifi && typeof property.general.wifi === 'object' ? property.general.wifi : null;
+  const wifiFromTopLevel = property.wifi && typeof property.wifi === 'object' ? property.wifi : null;
+
+  const wifiNameValue =
+    wifiFromGeneral?.name ??
+    property.general?.wifiName ??
+    wifiFromTopLevel?.name ??
+    property.wifiName ??
+    '';
+
+  const wifiPasswordValue =
+    wifiFromGeneral?.password ??
+    property.general?.wifiPassword ??
+    wifiFromTopLevel?.password ??
+    property.wifiPassword ??
+    '';
+
+  general.wifi = {
+    name: wifiNameValue === undefined || wifiNameValue === null ? '' : String(wifiNameValue),
+    password:
+      wifiPasswordValue === undefined || wifiPasswordValue === null ? '' : String(wifiPasswordValue)
   };
 
   const address = {
@@ -406,8 +434,31 @@ export default function PropertyModal({ property, onClose, onSave }) {
     const mapped = mapPropertyToFormData(property);
     const state = draft ? { ...mapped, ...draft } : mapped;
 
-    setFormData(state);
-    initialFormDataSerializedRef.current = JSON.stringify(state);
+    const wifiDraftName =
+      state.general?.wifi?.name ??
+      state.general?.wifiName ??
+      '';
+    const wifiDraftPassword =
+      state.general?.wifi?.password ??
+      state.general?.wifiPassword ??
+      '';
+
+    const normalizedState = {
+      ...state,
+      general: {
+        ...state.general,
+        wifi: {
+          name: wifiDraftName === undefined || wifiDraftName === null ? '' : String(wifiDraftName),
+          password:
+            wifiDraftPassword === undefined || wifiDraftPassword === null
+              ? ''
+              : String(wifiDraftPassword)
+        }
+      }
+    };
+
+    setFormData(normalizedState);
+    initialFormDataSerializedRef.current = JSON.stringify(normalizedState);
     setErrors({});
     setHasUnsavedChanges(false);
     setIsSlugManual(Boolean(draft?.onlinePresence?.slug && draft.onlinePresence.slug !== generateSlug(mapped.general.name, mapped.address.city)));
@@ -942,6 +993,14 @@ export default function PropertyModal({ property, onClose, onSave }) {
     if (formData.general.capacity.children < 0) {
       newErrors['general.capacity.children'] = 'Nombre invalide';
     }
+    const wifiName = formData.general.wifi?.name ? String(formData.general.wifi.name).trim() : '';
+    const wifiPassword = formData.general.wifi?.password ? String(formData.general.wifi.password).trim() : '';
+    if (wifiName.length > 120) {
+      newErrors['general.wifi.name'] = 'Le nom du réseau Wi-Fi doit contenir 120 caractères maximum';
+    }
+    if (wifiPassword.length > 120) {
+      newErrors['general.wifi.password'] = 'Le mot de passe Wi-Fi doit contenir 120 caractères maximum';
+    }
     if (!formData.address.street?.trim()) {
       newErrors['address.street'] = 'Rue obligatoire';
     }
@@ -1459,6 +1518,37 @@ export default function PropertyModal({ property, onClose, onSave }) {
                         onChange={(event) => updateField('general.surface', event.target.value)}
                         className="form-input"
                       />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label htmlFor="general-wifi-name" className="form-label">Nom du réseau Wi-Fi</label>
+                      <input
+                        id="general-wifi-name"
+                        type="text"
+                        maxLength={120}
+                        value={formData.general.wifi?.name ?? ''}
+                        onChange={(event) => updateField('general.wifi.name', event.target.value)}
+                        className={`form-input ${errors['general.wifi.name'] ? 'border-danger-500' : ''}`}
+                      />
+                      {errors['general.wifi.name'] && (
+                        <p className="mt-1 text-xs text-danger-600">{errors['general.wifi.name']}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="general-wifi-password" className="form-label">Mot de passe Wi-Fi</label>
+                      <input
+                        id="general-wifi-password"
+                        type="text"
+                        maxLength={120}
+                        value={formData.general.wifi?.password ?? ''}
+                        onChange={(event) => updateField('general.wifi.password', event.target.value)}
+                        className={`form-input ${errors['general.wifi.password'] ? 'border-danger-500' : ''}`}
+                      />
+                      {errors['general.wifi.password'] && (
+                        <p className="mt-1 text-xs text-danger-600">{errors['general.wifi.password']}</p>
+                      )}
                     </div>
                   </div>
 
