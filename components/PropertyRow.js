@@ -1,33 +1,15 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  MapPin,
-  Users,
-  Bed,
-  Bath,
-  MoreVertical,
-  Eye,
-  Calendar,
-  Edit,
-  Settings,
-  Trash2,
-  Link2,
-  TrendingUp,
-  Star
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { MapPin, Eye, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
 
 export default function PropertyRow({
   property,
   onEdit,
   onView,
-  onCalendar,
-  onSettings,
   onDelete
 }) {
-  const [showDropdown, setShowDropdown] = useState(false);
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
@@ -89,13 +71,21 @@ export default function PropertyRow({
   const profilePhotoUrl = getPhotoUrl(property.profilePhoto);
   const profilePhotoThumbnail = getThumbnailUrl(property.profilePhoto);
 
-  const formattedAddress = useMemo(() => {
+  const city = useMemo(() => {
     if (!property) {
       return '';
     }
 
     if (typeof property.address === 'string') {
       return property.address;
+    }
+
+    if (property.address?.city) {
+      return property.address.city;
+    }
+
+    if (property.city) {
+      return property.city;
     }
 
     if (property.formattedAddress) {
@@ -106,217 +96,106 @@ export default function PropertyRow({
       return property.address.formatted;
     }
 
-    if (property.address && typeof property.address === 'object') {
-      const { streetNumber, street, complement, postalCode, city, country } = property.address;
-      return [
-        [streetNumber, street].filter(Boolean).join(' '),
-        complement,
-        [postalCode, city].filter(Boolean).join(' '),
-        country
-      ]
-        .filter(Boolean)
-        .join(', ');
-    }
-
-    return '';
+    return property.address?.city || '';
   }, [property]);
 
-  const toggleDropdown = () => setShowDropdown((current) => !current);
+  const revenue = property?.stats?.totalRevenue;
+  let formattedRevenue = '–';
+  if (typeof revenue === 'number') {
+    formattedRevenue = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0
+    }).format(revenue);
+  } else if (typeof revenue === 'string' && revenue.trim() !== '') {
+    formattedRevenue = revenue;
+  }
 
-  const handleAction = (callback) => {
-    if (!callback) {
-      return;
+  const rawRating = property?.stats?.averageRating;
+  let formattedRating = '–';
+  if (typeof rawRating === 'number') {
+    formattedRating = `${rawRating.toFixed(1).replace(/\.0$/, '')}/5`;
+  } else if (typeof rawRating === 'string' && rawRating.trim() !== '') {
+    formattedRating = rawRating.includes('/5') ? rawRating : `${rawRating}/5`;
+  }
+
+  const handleView = () => {
+    if (onView) {
+      onView(property);
     }
+  };
 
-    callback(property);
-    setShowDropdown(false);
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(property);
+    }
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-primary-100 transition-colors">
+    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm">
       <div className="p-4 sm:p-6 space-y-4">
-        <div className="flex flex-col xl:flex-row xl:items-center xl:gap-6 gap-4">
-          <div className="flex items-start gap-4 flex-1 min-w-0">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4 min-w-0">
             {profilePhotoUrl ? (
-              <div className="relative w-28 h-24 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+              <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
                 <Image
                   src={profilePhotoThumbnail}
                   alt={`Photo de ${property.name}`}
                   fill
                   className="object-cover"
-                  sizes="112px"
+                  sizes="64px"
                   unoptimized
                 />
               </div>
             ) : (
-              <div className="w-28 h-24 flex-shrink-0 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-                Aucune photo
+              <div className="w-16 h-16 flex-shrink-0 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs text-center">
+                Aucune
+                <br />
+                photo
               </div>
             )}
 
-            <div className="flex-1 min-w-0 space-y-3">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-2">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">{property.name}</h3>
-                    <span className={`badge ${getStatusColor(property.status)}`}>
-                      {getStatusText(property.status)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-                    <MapPin className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">
-                      {formattedAddress || 'Adresse non renseignée'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4 text-gray-400" />
-                    <span>{property.maxGuests ?? '-'}</span>
-                    <span className="text-gray-400">invités max</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Bed className="h-4 w-4 text-gray-400" />
-                    <span>{property.bedrooms ?? '-'}</span>
-                    <span className="text-gray-400">chambres</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Bath className="h-4 w-4 text-gray-400" />
-                    <span>{property.bathrooms ?? '-'}</span>
-                    <span className="text-gray-400">salles de bain</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-success-500" />
-                    <span className="font-medium text-gray-900">
-                      {property.stats?.totalRevenue || 0}€
-                    </span>
-                    <span className="text-gray-500">CA total</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4 text-warning-500" />
-                    <span className="font-medium text-gray-900">
-                      {property.stats?.averageRating ? `${property.stats.averageRating}/5` : '-'}
-                    </span>
-                    <span className="text-gray-500">Note moy.</span>
-                  </div>
-                </div>
-
-                {(property.airbnbUrl || property.bookingUrl) && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link2 className="h-4 w-4 text-primary-500" />
-                    {property.airbnbUrl && (
-                      <a
-                        href={property.airbnbUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
-                      >
-                        Airbnb
-                      </a>
-                    )}
-                    {property.bookingUrl && (
-                      <a
-                        href={property.bookingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
-                      >
-                        Booking
-                      </a>
-                    )}
-                  </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900 truncate">{property.name}</h3>
+                {property.status && (
+                  <span className={`badge ${getStatusColor(property.status)}`}>
+                    {getStatusText(property.status)}
+                  </span>
                 )}
               </div>
-
-              {property.description && (
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {property.description}
-                </p>
-              )}
+              <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{city || 'Ville non renseignée'}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-3">
-            <div className="relative">
-              <button
-                onClick={toggleDropdown}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                aria-haspopup="true"
-                aria-expanded={showDropdown}
-                aria-label="Actions"
-              >
-                <MoreVertical className="h-5 w-5 text-gray-500" />
-              </button>
-
-              {showDropdown && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                    <button
-                      onClick={() => handleAction(onView)}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Eye className="h-4 w-4" />
-                      Voir détails
-                    </button>
-                    <button
-                      onClick={() => handleAction(onEdit)}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => handleAction(onCalendar)}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Calendrier
-                    </button>
-                    <button
-                      onClick={() => handleAction(onSettings)}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Paramètres
-                    </button>
-                    {onDelete && (
-                      <button
-                        onClick={() => handleAction(onDelete)}
-                        className="w-full px-4 py-2 text-left text-sm text-danger-600 hover:bg-danger-50 flex items-center gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Supprimer
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6 text-sm text-gray-600">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-gray-400">CA</div>
+              <div className="text-base font-semibold text-gray-900">{formattedRevenue}</div>
             </div>
-
-            <div className="grid grid-cols-2 gap-2 w-52">
-              <button
-                onClick={() => onView && onView(property)}
-                className="btn-secondary text-sm py-2"
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                Voir
-              </button>
-              <button
-                onClick={() => onCalendar && onCalendar(property)}
-                className="btn-primary text-sm py-2"
-              >
-                <Calendar className="h-4 w-4 mr-1" />
-                Planning
-              </button>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-gray-400">Classement</div>
+              <div className="text-base font-semibold text-gray-900">{formattedRating}</div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <button onClick={handleView} className="btn-secondary text-sm py-2 px-4">
+              <Eye className="h-4 w-4 mr-2" />
+              Voir
+            </button>
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className="p-2 rounded-lg text-danger-600 hover:bg-danger-50 transition-colors"
+                aria-label={`Supprimer le logement ${property.name}`}
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
       </div>
