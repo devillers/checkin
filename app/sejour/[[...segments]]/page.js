@@ -1,4 +1,4 @@
-// app/sejour/[userId]/[propertyId]/page.js
+// app/sejour/[[...segments]]/page.js
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import {
   Sparkles,
   ShieldCheck,
   Wifi,
-  ArrowUpRight
+  ArrowUpRight,
 } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { connectDB } from '@/lib/mongodb';
@@ -45,6 +45,20 @@ const FALLBACK_HOST_AVATAR =
   'https://images.pexels.com/photos/532220/pexels-photo-532220.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=2';
 
 const isDirectVideoUrl = (url) => /\.(mp4|webm|ogg)(?:\?.*)?$/i.test(url ?? '');
+
+function extractRouteParams(params) {
+  const segments = Array.isArray(params?.segments) ? params.segments : [];
+
+  if (segments.length === 0) {
+    return { userId: '', propertyId: '' };
+  }
+
+  if (segments.length === 1) {
+    return { userId: '', propertyId: segments[0] };
+  }
+
+  return { userId: segments[0], propertyId: segments[1] };
+}
 
 export async function fetchMiniSiteData(userIdParam, propertyParam) {
   const userId = typeof userIdParam === 'string' ? userIdParam.trim() : '';
@@ -97,7 +111,8 @@ export async function fetchMiniSiteData(userIdParam, propertyParam) {
 }
 
 export async function generateMetadata({ params }) {
-  const data = await fetchMiniSiteData(params.userId, params.propertyId);
+  const { userId, propertyId } = extractRouteParams(params);
+  const data = await fetchMiniSiteData(userId, propertyId);
 
   if (!data?.property) {
     return {
@@ -243,7 +258,8 @@ function extractIcalUrl(property) {
 }
 
 export default async function MiniSitePage({ params }) {
-  const data = await fetchMiniSiteData(params.userId, params.propertyId);
+  const { userId, propertyId } = extractRouteParams(params);
+  const data = await fetchMiniSiteData(userId, propertyId);
 
   if (!data?.property) {
     notFound();
@@ -317,11 +333,9 @@ export default async function MiniSitePage({ params }) {
             </span>
             <h1 className="text-4xl font-semibold leading-tight md:text-5xl">{property.name}</h1>
 
-
             {shortDescription && (
               <p className="max-w-2xl text-lg text-white/80">{shortDescription}</p>
             )}
-
 
             <div className="flex flex-wrap gap-3">
               {highlightCards.map((item) => (
@@ -393,8 +407,8 @@ export default async function MiniSitePage({ params }) {
             <h2 className="text-2xl font-semibold text-gray-900">Vivez une expérience mémorable</h2>
             <div className="text-gray-600">
               {property.shortDescription && (
-              <p className="text-lg text-justify w-full">{property.shortDescription}</p>
-            )}
+                <p className="text-lg text-justify w-full">{property.shortDescription}</p>
+              )}
             </div>
             {amenities.length > 0 && (
               <div className="flex flex-wrap gap-3">
@@ -409,19 +423,16 @@ export default async function MiniSitePage({ params }) {
               </div>
             )}
           </div>
-
-       
         </section>
 
         {mediaCategories.length > 0 && (
           <section className="space-y-8">
             <div className="space-y-3">
               <h2 className="text-2xl font-semibold text-gray-900">Univers & ambiances</h2>
-             
-                 {property.description && (
-              <p className="text-lg w-full text-justify text-gray-600 leading-loose">{property.description}</p>
-            )}
-              
+
+              {property.description && (
+                <p className="text-lg w-full text-justify text-gray-600 leading-loose">{property.description}</p>
+              )}
             </div>
             <div className="space-y-12">
               {mediaCategories.map((category) => (
@@ -499,8 +510,6 @@ export default async function MiniSitePage({ params }) {
           </section>
         )}
 
-   
-
         <section className="grid gap-8 lg:grid-cols-[1.4fr,1fr]">
           <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-soft">
             <div className="flex items-center gap-3">
@@ -518,10 +527,10 @@ export default async function MiniSitePage({ params }) {
                   <span key={day}>{day}</span>
                 ))}
               </div>
-              <div className="mt-3 grid grid-cols-7 gap-2 text-center text-sm">
-                {Array.from({ length: 30 }, (_, index) => index + 1).map((day) => {
-                  const status =
-                    day === 4 || day === 5 ? 'reserved' : day === 11 ? 'pending' : day === 18 ? 'blocked' : 'free';
+              <div className="mt-4 grid grid-cols-7 gap-2 text-center">
+                {Array.from({ length: 28 }).map((_, index) => {
+                  const status = ['reserved', 'pending', 'blocked', 'available'][index % 4];
+                  const day = index + 1;
                   return (
                     <span
                       key={day}
