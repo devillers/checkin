@@ -1983,7 +1983,7 @@ export default function PropertyDetailsPage() {
                       onChange={(e) => setShortDescriptionDraft(e.target.value)}
                       maxLength={160}
                       rows={4}
-                      className={`form-textarea ${shortDescriptionError ? 'border-danger-500' : ''}`}
+                      className={`form-textarea ${shortDescriptionError ? 'border-danger-500' : ''}w-full`}
                     />
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{shortDescriptionDraft.length}/160 caractères</span>
@@ -2026,7 +2026,7 @@ export default function PropertyDetailsPage() {
                       value={longDescriptionDraft}
                       onChange={(e) => setLongDescriptionDraft(e.target.value)}
                       rows={8}
-                      className={`form-textarea ${longDescriptionError ? 'border-danger-500' : ''}`}
+                      className={`form-textarea ${longDescriptionError ? 'border-danger-500' : ''}w-full`}
                     />
                     {longDescriptionError && <p className="text-xs text-danger-600">{longDescriptionError}</p>}
                     <div className="flex items-center gap-2">
