@@ -21,13 +21,22 @@ import {
   Check,
   Info,
   Search,
-  X
+  X,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Clock,
+  Smartphone,
+  Mail
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { EQUIPMENT_GROUPS, EQUIPMENT_OPTION_MAP } from '@/lib/equipment-options';
+import { PROPERTY_CALENDARS } from '@/lib/property-calendar-data';
 
 const PROPERTY_TYPE_LABELS = {
   apartment: 'Appartement',
@@ -41,6 +50,80 @@ const PROPERTY_TYPE_LABELS = {
 };
 
 const isDirectVideoUrl = (url) => /\.(mp4|webm|ogg)(?:\?.*)?$/i.test(url ?? '');
+
+const CALENDAR_WEEK_DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+const CALENDAR_STATUS_STYLES = {
+  confirmed: 'border-emerald-200 bg-emerald-100 text-emerald-700',
+  pending: 'border-amber-200 bg-amber-100 text-amber-700',
+  maintenance: 'border-sky-200 bg-sky-100 text-sky-700',
+  blocked: 'border-slate-200 bg-slate-100 text-slate-600'
+};
+
+const isSameDay = (a, b) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const isDateWithinRange = (date, start, end) => {
+  const current = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return current >= start && current <= end;
+};
+
+const buildCalendarDays = (month) => {
+  const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+  const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+
+  const startDayOffset = (startOfMonth.getDay() + 6) % 7;
+  const startDate = new Date(startOfMonth);
+  startDate.setDate(startOfMonth.getDate() - startDayOffset);
+
+  const totalDays = 42;
+  const days = [];
+
+  for (let i = 0; i < totalDays; i += 1) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(startDate.getDate() + i);
+    days.push({
+      date: currentDate,
+      isCurrentMonth: currentDate.getMonth() === month.getMonth(),
+      isToday: isSameDay(currentDate, new Date())
+    });
+  }
+
+  return days;
+};
+
+const formatReservationDateRange = (startDate, endDate) => {
+  const formatter = new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'short'
+  });
+
+  return `${formatter.format(startDate)} → ${formatter.format(endDate)}`;
+};
+
+const formatReservationFullDate = (date) =>
+  new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date);
+
+const getReservationStyle = (status) => CALENDAR_STATUS_STYLES[status] ?? CALENDAR_STATUS_STYLES.confirmed;
+
+const getReservationStatusLabel = (status) => {
+  switch (status) {
+    case 'pending':
+      return 'En attente';
+    case 'maintenance':
+      return 'Maintenance';
+    case 'blocked':
+      return 'Blocage';
+    case 'confirmed':
+    default:
+      return 'Confirmée';
+  }
+};
 
 export default function PropertyDetailsPage() {
   const params = useParams();
@@ -56,6 +139,13 @@ export default function PropertyDetailsPage() {
   const [isMiniSiteCopied, setIsMiniSiteCopied] = useState(false);
 
   const [ownerProfile, setOwnerProfile] = useState(null);
+
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+  const [selectedReservation, setSelectedReservation] = useState(null);
 
   const [isEditingShortDescription, setIsEditingShortDescription] = useState(false);
   const [isEditingLongDescription, setIsEditingLongDescription] = useState(false);
@@ -677,6 +767,118 @@ export default function PropertyDetailsPage() {
     return null;
   }, [property]);
 
+  const propertyCalendarData = useMemo(() => {
+    if (!property) return null;
+
+    const calendarFromMock = PROPERTY_CALENDARS.find((item) => item.id === property.id);
+    if (calendarFromMock) return calendarFromMock;
+
+    const locationParts = [property?.address?.city, property?.address?.country].filter(Boolean);
+
+    const rawOccupancy =
+      property?.operations?.metrics?.occupancyRate ??
+      property?.operations?.occupancyRate ??
+      property?.operations?.overview?.occupancyRate ??
+      null;
+
+    let occupancyRate = null;
+    if (typeof rawOccupancy === 'number' && Number.isFinite(rawOccupancy)) {
+      occupancyRate = Math.round(rawOccupancy);
+    } else if (typeof rawOccupancy === 'string') {
+      const parsed = Number.parseFloat(rawOccupancy);
+      if (Number.isFinite(parsed)) occupancyRate = Math.round(parsed);
+    }
+
+    const reservations = Array.isArray(property?.operations?.calendar?.reservations)
+      ? property.operations.calendar.reservations
+      : [];
+
+    const housekeepingPartner =
+      property?.operations?.housekeeping?.partner ||
+      property?.operations?.housekeeping?.provider ||
+      property?.operations?.housekeeping?.company ||
+      null;
+
+    return {
+      id: property.id,
+      name: property.name || property.general?.name || 'Logement',
+      location: locationParts.join(' • '),
+      image: heroPhoto?.url ?? null,
+      occupancyRate,
+      housekeepingPartner,
+      reservations
+    };
+  }, [heroPhoto?.url, property]);
+
+  const reservationsWithDates = useMemo(() => {
+    if (!propertyCalendarData) return [];
+
+    return propertyCalendarData.reservations
+      .map((reservation) => {
+        if (!reservation) return null;
+        const startDate =
+          reservation.startDate instanceof Date
+            ? reservation.startDate
+            : new Date(reservation.startDate);
+        const endDate =
+          reservation.endDate instanceof Date ? reservation.endDate : new Date(reservation.endDate);
+
+        if (Number.isNaN(startDate?.getTime()) || Number.isNaN(endDate?.getTime())) {
+          return null;
+        }
+
+        return { ...reservation, startDate, endDate };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.startDate - b.startDate);
+  }, [propertyCalendarData]);
+
+  const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
+
+  const monthFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('fr-FR', {
+        month: 'long',
+        year: 'numeric'
+      }),
+    []
+  );
+  const hasReservations = reservationsWithDates.length > 0;
+
+  useEffect(() => {
+    if (!hasReservations) {
+      setSelectedReservation(null);
+    }
+  }, [hasReservations]);
+
+  useEffect(() => {
+    if (!property?.id) return;
+    const today = new Date();
+    setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setSelectedReservation(null);
+  }, [property?.id]);
+
+  useEffect(() => {
+    if (!isCalendarOpen) return;
+    if (reservationsWithDates.length === 0) return;
+
+    const earliestReservation = reservationsWithDates.reduce((earliest, current) =>
+      current.startDate < earliest.startDate ? current : earliest
+    );
+
+    const target = new Date(
+      earliestReservation.startDate.getFullYear(),
+      earliestReservation.startDate.getMonth(),
+      1
+    );
+
+    setCalendarMonth((prev) =>
+      prev.getFullYear() === target.getFullYear() && prev.getMonth() === target.getMonth()
+        ? prev
+        : target
+    );
+  }, [isCalendarOpen, reservationsWithDates]);
+
   const sortedCategories = useMemo(() => {
     const categoryList = Array.isArray(property?.medias?.categories) ? property.medias.categories : [];
     if (!Array.isArray(categoryList)) return [];
@@ -708,7 +910,23 @@ export default function PropertyDetailsPage() {
 
   const handleGoBack = () => router.push('/dashboard/properties');
   const handleOpenSettings = () => property?.id && router.push(`/dashboard/properties/${property.id}/settings`);
-  const handleOpenCalendar = () => property?.id && router.push(`/dashboard/calendrier?property=${property.id}`);
+  const handleOpenCalendar = () => {
+    if (!property) return;
+    setIsCalendarOpen(true);
+  };
+  const handleCalendarMonthChange = (direction) => {
+    setCalendarMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() + direction);
+      return next;
+    });
+  };
+  const handleCalendarDialogChange = (open) => {
+    setIsCalendarOpen(open);
+    if (!open) {
+      setSelectedReservation(null);
+    }
+  };
   const handlePublish = () => miniSiteUrl && window.open(miniSiteUrl, '_blank', 'noopener,noreferrer');
 
   const handleCopyMiniSiteUrl = async () => {
@@ -1320,8 +1538,286 @@ export default function PropertyDetailsPage() {
 
   return (
     <>
-     
-        <div className="space-y-6">
+      <Dialog open={isCalendarOpen} onOpenChange={handleCalendarDialogChange}>
+        <DialogContent className="max-w-5xl overflow-hidden border-none bg-transparent p-0 shadow-none">
+          {propertyCalendarData ? (
+            <div className="overflow-hidden rounded-2xl bg-white shadow-xl">
+              <div className="relative h-56 w-full bg-gray-100 sm:h-64">
+                {propertyCalendarData.image ? (
+                  <Image
+                    src={propertyCalendarData.image}
+                    alt={propertyCalendarData.name}
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 768px) 60vw, 100vw"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-100 via-white to-primary-50 text-primary-600">
+                    <Home className="h-12 w-12" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-6 text-white sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-wide text-white/70">
+                      Calendrier du logement
+                    </p>
+                    <h2 className="text-2xl font-semibold">{propertyCalendarData.name}</h2>
+                    {propertyCalendarData.location && (
+                      <p className="mt-1 flex items-center gap-2 text-sm text-white/80">
+                        <MapPin className="h-4 w-4" />
+                        {propertyCalendarData.location}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {typeof propertyCalendarData.occupancyRate === 'number' && (
+                      <Badge className="bg-white/90 text-gray-900" variant="outline">
+                        Taux d'occupation {propertyCalendarData.occupancyRate}%
+                      </Badge>
+                    )}
+                    {propertyCalendarData.housekeepingPartner && (
+                      <Badge className="bg-white/90 text-gray-900" variant="outline">
+                        Ménage : {propertyCalendarData.housekeepingPartner}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6 p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-wide text-primary-600">
+                      Planning des réservations
+                    </p>
+                    <h3 className="text-2xl font-semibold text-gray-900">{propertyCalendarData.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Mois affiché : {monthFormatter.format(calendarMonth)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleCalendarMonthChange(-1)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      aria-label="Mois précédent"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="text-center">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Mois</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {monthFormatter.format(calendarMonth)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCalendarMonthChange(1)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      aria-label="Mois suivant"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                    <span>Cliquer sur une réservation pour afficher le détail.</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 font-medium text-emerald-700">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" /> Confirmée
+                    </span>
+                    <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-2.5 py-0.5 font-medium text-amber-700">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" /> En attente
+                    </span>
+                    <span className="flex items-center gap-1 rounded-full border border-sky-200 bg-sky-100 px-2.5 py-0.5 font-medium text-sky-700">
+                      <span className="h-2 w-2 rounded-full bg-sky-500" /> Maintenance
+                    </span>
+                    <span className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">
+                      <span className="h-2 w-2 rounded-full bg-slate-500" /> Blocage
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-px rounded-xl bg-slate-200 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {CALENDAR_WEEK_DAYS.map((day) => (
+                    <div key={day} className="bg-white px-3 py-2 text-center">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-slate-200">
+                  {calendarDays.map(({ date, isCurrentMonth, isToday }) => {
+                    const dayReservations = reservationsWithDates.filter((reservation) =>
+                      isDateWithinRange(date, reservation.startDate, reservation.endDate)
+                    );
+
+                    const containerClasses = ['min-h-[110px]', 'bg-white', 'p-2', 'transition-colors'];
+                    if (!isCurrentMonth) {
+                      containerClasses.push('bg-slate-50', 'text-slate-300');
+                    }
+                    if (isToday) {
+                      containerClasses.push('border-2', 'border-primary/60');
+                    }
+
+                    const dateClasses = ['text-sm'];
+                    if (!isCurrentMonth) {
+                      dateClasses.push('text-slate-300');
+                    }
+
+                    return (
+                      <div key={date.toISOString()} className={containerClasses.join(' ')}>
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                          <span className={dateClasses.join(' ')}>{date.getDate()}</span>
+                          {isToday && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
+                              Aujourd'hui
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-1 space-y-1">
+                          {dayReservations.slice(0, 3).map((reservation) => (
+                            <button
+                              key={reservation.id}
+                              type="button"
+                              onClick={() => setSelectedReservation(reservation)}
+                              className={`group flex w-full items-center justify-between rounded-md border px-2 py-1 text-left text-[11px] font-medium transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${getReservationStyle(reservation.status)}`}
+                            >
+                              <span className="truncate">{reservation.guestName}</span>
+                              <span className="ml-2 flex items-center text-[10px] font-normal opacity-75">
+                                <Clock className="mr-1 h-3 w-3" />
+                                {reservation.checkInTime ?? '—'}
+                              </span>
+                            </button>
+                          ))}
+                          {dayReservations.length > 3 && (
+                            <div className="text-[10px] text-slate-500">
+                              +{dayReservations.length - 3} autres réservations
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!hasReservations ? (
+                  <div className="rounded-xl border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+                    Aucune réservation enregistrée pour ce logement.
+                  </div>
+                ) : selectedReservation ? (
+                  <div className="space-y-4 rounded-xl border bg-white p-4 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{selectedReservation.guestName}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {formatReservationDateRange(
+                            selectedReservation.startDate,
+                            selectedReservation.endDate
+                          )}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Arrivée {formatReservationFullDate(selectedReservation.startDate)}
+                        </p>
+                      </div>
+                      <Badge
+                        className={`capitalize border ${getReservationStyle(selectedReservation.status)}`}
+                        variant="outline"
+                      >
+                        {getReservationStatusLabel(selectedReservation.status)}
+                      </Badge>
+                    </div>
+                    <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+                      {selectedReservation.channel && (
+                        <p>
+                          <span className="font-medium text-gray-900">Canal :</span>{' '}
+                          {selectedReservation.channel}
+                        </p>
+                      )}
+                      <p className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-gray-500" />
+                        {selectedReservation.guests ?? 0} voyageurs
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        Check-in {selectedReservation.checkInTime ?? '—'} • Check-out{' '}
+                        {selectedReservation.checkOutTime ?? '—'}
+                      </p>
+                      {selectedReservation.phone && (
+                        <p className="flex items-center gap-2">
+                          <Smartphone className="h-4 w-4 text-gray-500" />
+                          {selectedReservation.phone}
+                        </p>
+                      )}
+                      {selectedReservation.email && (
+                        <p className="flex items-center gap-2 break-all">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          {selectedReservation.email}
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid-cols-3">
+                      <div
+                        className={`rounded-md border p-2 ${
+                          selectedReservation.depositPaid
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-amber-200 bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        Caution {selectedReservation.depositPaid ? 'encaissée' : 'en attente'}
+                      </div>
+                      <div
+                        className={`rounded-md border p-2 ${
+                          selectedReservation.inventorySigned
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-amber-200 bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        Inventaire {selectedReservation.inventorySigned ? 'signé' : 'non signé'}
+                      </div>
+                      <div
+                        className={`rounded-md border p-2 ${
+                          selectedReservation.welcomePack
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        Pack d'accueil {selectedReservation.welcomePack ? 'prêt' : 'à prévoir'}
+                      </div>
+                    </div>
+                    {selectedReservation.notes && (
+                      <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Notes opérationnelles
+                        </p>
+                        <p className="mt-2 text-sm text-gray-700">{selectedReservation.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+                    Sélectionnez une réservation pour afficher ses détails.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-white p-6 text-sm text-muted-foreground shadow-xl">
+              <h2 className="text-lg font-semibold text-gray-900">Calendrier indisponible</h2>
+              <p>Impossible de charger le calendrier pour ce logement.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <button
             onClick={handleGoBack}
@@ -1355,7 +1851,7 @@ export default function PropertyDetailsPage() {
                 className="btn-icon bg-primary-600 text-white border-primary-600 hover:bg-primary-700"
                 title="Modifier la propriété"
               >
-                <Pencil className="h-5 w-5" />
+                <Settings className="h-5 w-5" />
                 <span className="sr-only">Modifier la propriété</span>
               </button>
             </div>
