@@ -382,18 +382,32 @@ export default function PropertyModal({ property, onClose, onSave }) {
   const [equipmentSearch, setEquipmentSearch] = useState('');
   const autosaveTimeoutRef = useRef(null);
   const draftKeyRef = useRef('property-draft-new');
+  const initialFormDataSerializedRef = useRef(
+    JSON.stringify(createDefaultFormData())
+  );
 
   useEffect(() => {
     const key = property ? `property-draft-${property.id}` : 'property-draft-new';
     draftKeyRef.current = key;
 
-    const draftRaw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    let draftRaw = null;
+    if (typeof window !== 'undefined') {
+      if (!property) {
+        try {
+          localStorage.removeItem('property-draft-new');
+        } catch (error) {
+          console.error('Failed to clear draft:', error);
+        }
+      }
+      draftRaw = localStorage.getItem(key);
+    }
     const draft = draftRaw ? JSON.parse(draftRaw) : null;
 
     const mapped = mapPropertyToFormData(property);
     const state = draft ? { ...mapped, ...draft } : mapped;
 
     setFormData(state);
+    initialFormDataSerializedRef.current = JSON.stringify(state);
     setErrors({});
     setHasUnsavedChanges(false);
     setIsSlugManual(Boolean(draft?.onlinePresence?.slug && draft.onlinePresence.slug !== generateSlug(mapped.general.name, mapped.address.city)));
@@ -420,6 +434,11 @@ export default function PropertyModal({ property, onClose, onSave }) {
   }, [isEquipmentPickerOpen]);
 
   const scheduleAutosave = useCallback((nextData) => {
+    const serialized = JSON.stringify(nextData);
+    if (serialized === initialFormDataSerializedRef.current) {
+      return;
+    }
+
     setHasUnsavedChanges(true);
     if (autosaveTimeoutRef.current) {
       clearTimeout(autosaveTimeoutRef.current);
@@ -428,7 +447,7 @@ export default function PropertyModal({ property, onClose, onSave }) {
       setIsAutosaving(true);
       requestAnimationFrame(() => {
         try {
-          localStorage.setItem(draftKeyRef.current, JSON.stringify(nextData));
+          localStorage.setItem(draftKeyRef.current, serialized);
         } catch (error) {
           console.error('Failed to persist draft:', error);
         }
