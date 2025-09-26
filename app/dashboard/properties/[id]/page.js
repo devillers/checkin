@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -211,6 +211,7 @@ export default function PropertyDetailsPage() {
   const [photosDraft, setPhotosDraft] = useState([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [photosError, setPhotosError] = useState(null);
+  const gallerySectionRef = useRef(null);
 
   useEffect(() => {
     if (!isEquipmentPickerOpen) {
@@ -916,6 +917,18 @@ export default function PropertyDetailsPage() {
   const handleOpenCalendar = () => {
     if (!property) return;
     setIsCalendarOpen(true);
+  };
+  const handleOpenGalleryEditor = () => {
+    if (!property) return;
+    setPhotosError(null);
+    setIsEditingPhotos(true);
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        if (gallerySectionRef.current) {
+          gallerySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
   };
   const handleCalendarMonthChange = (direction) => {
     setCalendarMonth((prev) => {
@@ -1840,6 +1853,14 @@ export default function PropertyDetailsPage() {
               >
                 <Eye className="h-5 w-5" />
                 <span className="sr-only">Voir le mini-site</span>
+              </button>
+              <button
+                onClick={handleOpenGalleryEditor}
+                className="btn-icon border-primary-200 text-primary-700 hover:bg-primary-50"
+                title="Modifier la galerie"
+              >
+                <Images className="h-5 w-5" />
+                <span className="sr-only">Modifier la galerie</span>
               </button>
               <button
                 onClick={handleOpenCalendar}
@@ -2777,7 +2798,7 @@ export default function PropertyDetailsPage() {
 
             {/* Galeries */}
             {(sortedCategories.length > 0 || isEditingPhotos) && (
-              <div className="space-y-4">
+              <div ref={gallerySectionRef} className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">Galeries photos par catégorie</h2>
