@@ -28,7 +28,10 @@ import {
   ShieldCheck,
   Clock,
   Smartphone,
-  Mail
+
+  Mail,
+  Images
+
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Image from 'next/image';
@@ -2784,8 +2787,8 @@ export default function PropertyDetailsPage() {
                   </div>
                   {!isEditingPhotos ? (
                     <button type="button" onClick={handleStartPhotosEdit} className="btn-secondary inline-flex items-center">
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Modifier
+                      <Images className="mr-2 h-4 w-4" />
+                      Modifier la galerie
                     </button>
                   ) : (
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
