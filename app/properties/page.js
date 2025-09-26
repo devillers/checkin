@@ -12,7 +12,8 @@ import {
   Bath,
   Settings,
   BarChart3,
-  Edit
+  Edit,
+  Trash2
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import PropertyModal from '@/components/PropertyModal';
@@ -23,6 +24,9 @@ export default function PropertiesPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [propertyToDelete, setPropertyToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -59,6 +63,47 @@ export default function PropertiesPage() {
   const handleEditProperty = (property) => {
     setSelectedProperty(property);
     setShowModal(true);
+  };
+
+  const handleRequestDeleteProperty = (property) => {
+    setDeleteError('');
+    setPropertyToDelete(property);
+  };
+
+  const handleCancelDeleteProperty = () => {
+    setPropertyToDelete(null);
+    setDeleteError('');
+  };
+
+  const handleConfirmDeleteProperty = async () => {
+    if (!propertyToDelete) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      setDeleteError('');
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch(`/api/properties/${propertyToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Erreur lors de la suppression de la propriété.');
+      }
+
+      await fetchProperties();
+      setPropertyToDelete(null);
+    } catch (error) {
+      console.error('Error deleting property:', error);
+      setDeleteError(error.message || 'Erreur inattendue lors de la suppression de la propriété.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handlePropertySaved = async (property) => {
@@ -369,14 +414,23 @@ export default function PropertiesPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleEditProperty(property)}
-                            className="btn-primary inline-flex items-center px-3 py-2 text-sm"
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Modifier
-                          </button>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEditProperty(property)}
+                              className="btn-primary inline-flex items-center px-3 py-2 text-sm"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => handleRequestDeleteProperty(property)}
+                              className="btn-danger inline-flex items-center px-3 py-2 text-sm"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Effacer
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -394,6 +448,44 @@ export default function PropertiesPage() {
             onClose={() => setShowModal(false)}
             onSave={handlePropertySaved}
           />
+        )}
+
+        {propertyToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirmer la suppression
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Êtes-vous sûr de vouloir supprimer la propriété «&nbsp;
+                <span className="font-semibold">{propertyToDelete.name || 'Sans titre'}</span>
+                &nbsp;» ? Cette action est irréversible.
+              </p>
+              {deleteError && (
+                <div className="mt-4 bg-danger-50 border border-danger-200 text-danger-700 rounded-lg p-3 text-sm">
+                  {deleteError}
+                </div>
+              )}
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleCancelDeleteProperty}
+                  disabled={isDeleting}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={handleConfirmDeleteProperty}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Suppression...' : 'Confirmer'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </DashboardLayout>
