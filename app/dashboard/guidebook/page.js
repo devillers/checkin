@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clipboard, ExternalLink, Loader2, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+import { Clipboard, ExternalLink, Loader2, Pencil, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 
 import CreateGuideModal from '@/components/CreateGuideModal';
 
@@ -26,8 +26,11 @@ export default function GuidebookPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingGuide, setEditingGuide] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [copyFeedbackId, setCopyFeedbackId] = useState(null);
+  const [loadingEditId, setLoadingEditId] = useState(null);
 
   const fetchGuides = useCallback(async ({ showLoader = false } = {}) => {
     setError('');
@@ -104,6 +107,35 @@ export default function GuidebookPage() {
   const sortedGuides = useMemo(() => {
     return [...guides].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [guides]);
+
+  const handleEditClick = async (guideId) => {
+    if (!guideId) return;
+    setError('');
+    setLoadingEditId(guideId);
+    try {
+      const response = await fetch(`/api/guides/${guideId}`);
+      if (!response.ok) {
+        throw new Error('Edition load failed');
+      }
+      const data = await response.json();
+      setEditingGuide(data);
+      setIsEditModalOpen(true);
+    } catch (editError) {
+      console.error('Unable to load guide for editing', editError);
+      setError('Impossible de charger le guide pour modification.');
+    } finally {
+      setLoadingEditId(null);
+    }
+  };
+
+  const handleGuideUpdated = useCallback((updatedGuide) => {
+    if (!updatedGuide?._id) {
+      return;
+    }
+    setGuides((prev) =>
+      prev.map((item) => (item._id === updatedGuide._id ? { ...item, ...updatedGuide } : item))
+    );
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
@@ -219,6 +251,19 @@ export default function GuidebookPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => handleEditClick(guide._id)}
+                    disabled={loadingEditId === guide._id}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loadingEditId === guide._id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Pencil className="h-4 w-4" />
+                    )}
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleDelete(guide._id)}
                     disabled={deletingId === guide._id}
                     className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-500 transition hover:border-red-300 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
@@ -241,6 +286,16 @@ export default function GuidebookPage() {
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreated={handleGuideCreated}
+      />
+      <CreateGuideModal
+        open={isEditModalOpen && Boolean(editingGuide)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingGuide(null);
+        }}
+        mode="edit"
+        guide={editingGuide}
+        onUpdated={handleGuideUpdated}
       />
     </div>
   );

@@ -133,7 +133,14 @@ function extractWifiCredentials(property) {
   return { name: wifiName, password: wifiPassword };
 }
 
-export default function CreateGuideModal({ open, onClose, onCreated }) {
+export default function CreateGuideModal({
+  open,
+  onClose,
+  onCreated,
+  mode = 'create',
+  guide = null,
+  onUpdated,
+}) {
   const [propertyName, setPropertyName] = useState('');
   const [address, setAddress] = useState('');
   const [trashLocation, setTrashLocation] = useState('');
@@ -149,6 +156,8 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
   const [propertiesLoading, setPropertiesLoading] = useState(false);
   const [propertiesError, setPropertiesError] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
+
+  const isEditMode = mode === 'edit' && guide;
 
   const dialogRef = useRef(null);
 
@@ -173,6 +182,34 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
       onClose();
     }
   }, [onClose, resetForm]);
+
+  useEffect(() => {
+    if (!open || !isEditMode) {
+      return;
+    }
+
+    setPropertyName(guide?.propertyName || '');
+    setAddress(guide?.address || '');
+    setTrashLocation(guide?.trashLocation || '');
+    setWifiName(guide?.wifiName || '');
+    setWifiPassword(guide?.wifiPassword || '');
+    setSelectedPropertyId('');
+    setCreatedGuide(null);
+    setErrors({});
+    setServerError('');
+
+    const mappedRecommendations = Array.isArray(guide?.recommendations)
+      ? guide.recommendations.map((item) => ({
+          id: item.id || nanoid(8),
+          title: item.title || '',
+          content: Array.isArray(item.lines) ? item.lines.join('\n') : '',
+          linkLabel: item.link?.label || '',
+          linkUrl: item.link?.url || '',
+        }))
+      : [];
+
+    setRecommendations(mappedRecommendations);
+  }, [guide, isEditMode, open]);
 
   useEffect(() => {
     if (!open) {
@@ -448,36 +485,61 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
       recommendations: preparedRecommendations,
     };
 
+    if (isEditMode && !guide?._id) {
+      setServerError('Guide introuvable.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/guides', {
-        method: 'POST',
+      const endpoint = isEditMode ? `/api/guides/${guide._id}` : '/api/guides';
+      const response = await fetch(endpoint, {
+        method: isEditMode ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        if (data?.errors) {
+        if (!isEditMode && data?.errors) {
           setErrors(data.errors);
         } else if (data?.message) {
           setServerError(data.message);
         } else {
-          setServerError("Une erreur est survenue lors de la création du guide.");
+          setServerError(
+            isEditMode
+              ? 'Une erreur est survenue lors de la mise à jour du guide.'
+              : "Une erreur est survenue lors de la création du guide.",
+          );
         }
         return;
       }
 
-      const guide = await response.json();
-      setCreatedGuide(guide);
       setErrors({});
+      setServerError('');
+
+      if (isEditMode) {
+        if (typeof onUpdated === 'function') {
+          onUpdated(data);
+        }
+        handleClose();
+        return;
+      }
+
+      setCreatedGuide(data);
       if (typeof onCreated === 'function') {
-        onCreated(guide);
+        onCreated(data);
       }
     } catch (error) {
-      console.error('Guide creation failed', error);
-      setServerError("Impossible de créer le guide pour le moment.");
+      console.error('Guide submission failed', error);
+      setServerError(
+        isEditMode
+          ? 'Impossible de mettre à jour le guide pour le moment.'
+          : "Impossible de créer le guide pour le moment.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -505,10 +567,12 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-blue-500">Guide d'arrivée</p>
             <h2 id="create-guide-title" className="mt-2 text-2xl font-semibold text-slate-900">
-              Créer un nouveau guide
+              {isEditMode ? 'Modifier le guide' : 'Créer un nouveau guide'}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Renseignez les informations indispensables pour accueillir vos invités.
+              {isEditMode
+                ? 'Mettez à jour les informations partagées avec vos invités.'
+                : 'Renseignez les informations indispensables pour accueillir vos invités.'}
             </p>
           </div>
           <button
@@ -522,7 +586,7 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
         </div>
 
         <div className="px-6 py-6">
-          {createdGuide ? (
+          {!isEditMode && createdGuide ? (
             <div className="space-y-6">
               <div className="rounded-2xl bg-slate-50 p-6">
                 <h3 className="text-lg font-medium text-slate-900">Guide créé avec succès !</h3>
@@ -859,7 +923,13 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
                     isSubmitting ? 'opacity-60' : 'hover:bg-blue-700'
                   )}
                 >
-                  {isSubmitting ? 'Création en cours…' : 'Créer le guide'}
+                  {isSubmitting
+                    ? isEditMode
+                      ? 'Enregistrement…'
+                      : 'Création en cours…'
+                    : isEditMode
+                    ? 'Enregistrer les modifications'
+                    : 'Créer le guide'}
                 </button>
               </div>
             </form>
