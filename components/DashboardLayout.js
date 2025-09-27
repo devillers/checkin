@@ -1,26 +1,56 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Home,
-  FileText,
-  Users,
-  CreditCard,
-  Calendar,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Shield,
   Bell,
-  User,
-  ChevronDown,
   BookOpen,
   Building2,
-  ShieldAlert
+  Calendar,
+  ChevronDown,
+  CreditCard,
+  FileText,
+  Home,
+  LogOut,
+  Menu,
+  Settings,
+  Shield,
+  ShieldAlert,
+  User,
+  Users,
+  X
 } from 'lucide-react';
+
+const NAV_ITEMS = [
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
+  { name: 'Inventaires', href: '/dashboard/inventory', icon: FileText },
+  { name: 'Guests', href: '/dashboard/guests', icon: Users },
+  { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
+  { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
+  { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
+  { name: 'Paramètres', href: '/dashboard/settings', icon: Settings, showOnMobile: false }
+];
+
+const SUPER_ADMIN_ITEM = {
+  name: 'Super admin',
+  href: '/dashboard/super-admin',
+  icon: ShieldAlert
+};
+
+const buildNavigation = (role) => {
+  if (role !== 'superadmin') {
+    return [...NAV_ITEMS];
+  }
+
+  const [firstItem, ...rest] = NAV_ITEMS;
+  return [firstItem, SUPER_ADMIN_ITEM, ...rest];
+};
+
+const isActivePath = (currentPath, targetPath) =>
+  currentPath === targetPath ||
+  (targetPath !== '/dashboard' && currentPath.startsWith(targetPath));
 
 export default function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,23 +60,10 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Load user data from localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      // Redirect to login if no user data
-      router.push('/auth/login');
-    }
-
-    // Fetch notifications
-    fetchNotifications();
-  }, [router]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const token = localStorage.getItem('auth-token');
+
       if (!token) {
         setNotifications([]);
         return;
@@ -57,60 +74,58 @@ export default function DashboardLayout({ children }) {
           Authorization: `Bearer ${token}`
         }
       });
+
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.filter(notif => !notif.read));
-      } else if (response.status === 401) {
-        console.warn('Unauthorized when fetching notifications');
-        setNotifications([]);
+        setNotifications(data.filter((notification) => !notification.read));
+        return;
       }
+
+      if (response.status === 401) {
+        console.warn('Unauthorized when fetching notifications');
+      }
+
+      setNotifications([]);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  };
+  }, []);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      fetchNotifications();
+      return;
+    }
+
+    router.push('/auth/login');
+  }, [fetchNotifications, router]);
+
+  const navigation = useMemo(() => buildNavigation(user?.role), [user?.role]);
+  const mobileNavigation = useMemo(
+    () => navigation.filter((item) => item.showOnMobile !== false),
+    [navigation]
+  );
+
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('auth-token');
     localStorage.removeItem('user');
     router.push('/auth/login');
-  };
+  }, [router]);
 
-  const baseNavigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
-    { name: 'Inventaires', href: '/dashboard/inventory', icon: FileText },
-    { name: 'Guests', href: '/dashboard/guests', icon: Users },
-    { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
-    { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
-    { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
-    { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
-  ];
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen((previous) => !previous);
+  }, []);
 
-  const baseMobileNavigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
-    { name: 'Inventaires', href: '/dashboard/inventory', icon: FileText },
-    { name: 'Guests', href: '/dashboard/guests', icon: Users },
-    { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
-    { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
-    { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
-  ];
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
 
-  const superAdminEntry = {
-    name: 'Super admin',
-    href: '/dashboard/super-admin',
-    icon: ShieldAlert
-  };
-
-  const navigation =
-      user?.role === 'superadmin'
-      ? [baseNavigation[0], superAdminEntry, ...baseNavigation.slice(1)]
-      : baseNavigation;
-
-  const mobileNavigation =
-      user?.role === 'superadmin'
-      ? [baseMobileNavigation[0], superAdminEntry, ...baseMobileNavigation.slice(1)]
-      : baseMobileNavigation;
+  const toggleProfileDropdown = useCallback(() => {
+    setIsProfileDropdownOpen((previous) => !previous);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,27 +139,26 @@ export default function DashboardLayout({ children }) {
           </div>
           
           {/* Navigation */}
-          <nav className="mt-6 flex-1 px-4 space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href || 
-                (item.href !== '/dashboard' && pathname.startsWith(item.href));
-              
+          <nav className="mt-6 flex-1 space-y-1 px-4">
+            {navigation.map(({ name, href, icon: Icon }) => {
+              const active = isActivePath(pathname, href);
+
               return (
                 <Link
-                  key={item.name}
-                  href={item.href}
+                  key={name}
+                  href={href}
                   className={`${
-                    isActive
-                      ? 'bg-primary-50 border-r-2 border-primary-600 text-primary-700'
+                    active
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  } group flex items-center px-3 py-2 text-sm font-medium rounded-l-lg transition-colors`}
+                  } group flex items-center rounded-l-lg border-r-2 border-transparent px-3 py-2 text-sm font-medium transition-colors`}
                 >
-                  <item.icon
+                  <Icon
                     className={`${
-                      isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
-                    } mr-3 flex-shrink-0 h-5 w-5`}
+                      active ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
+                    } mr-3 h-5 w-5 flex-shrink-0`}
                   />
-                  {item.name}
+                  {name}
                 </Link>
               );
             })}
@@ -154,7 +168,7 @@ export default function DashboardLayout({ children }) {
           <div className="flex-shrink-0 border-t border-gray-200 p-4">
             <div className="relative">
               <button
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                onClick={toggleProfileDropdown}
                 className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
               >
                 <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
@@ -172,11 +186,11 @@ export default function DashboardLayout({ children }) {
               </button>
 
               {isProfileDropdownOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
                   <Link
                     href="/settings/profile"
                     className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    onClick={() => setIsProfileDropdownOpen(false)}
+                    onClick={toggleProfileDropdown}
                   >
                     <User className="h-4 w-4 mr-2" />
                     Mon profil
@@ -184,7 +198,7 @@ export default function DashboardLayout({ children }) {
                   <Link
                     href="/settings"
                     className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    onClick={() => setIsProfileDropdownOpen(false)}
+                    onClick={toggleProfileDropdown}
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Paramètres
@@ -209,13 +223,13 @@ export default function DashboardLayout({ children }) {
         {/* Mobile menu overlay */}
         {isMobileMenuOpen && (
           <div className="fixed inset-0 z-40 flex">
-            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="fixed inset-0 bg-black/50" onClick={closeMobileMenu} />
             <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
               <div className="absolute top-0 right-0 -mr-12 pt-2">
                 <button
                   type="button"
                   className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   <X className="h-6 w-6 text-white" />
                 </button>
@@ -226,28 +240,27 @@ export default function DashboardLayout({ children }) {
                 <span className="ml-2 text-xl font-bold gradient-text">Checkinly</span>
               </div>
               
-              <nav className="mt-6 flex-1 px-4 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href || 
-                    (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                  
+              <nav className="mt-6 flex-1 space-y-1 px-4">
+                {navigation.map(({ name, href, icon: Icon }) => {
+                  const active = isActivePath(pathname, href);
+
                   return (
                     <Link
-                      key={item.name}
-                      href={item.href}
+                      key={name}
+                      href={href}
                       className={`${
-                        isActive
+                        active
                           ? 'bg-primary-50 text-primary-700'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center px-3 py-2 text-sm font-medium rounded-lg`}
-                      onClick={() => setIsMobileMenuOpen(false)}
+                      } group flex items-center rounded-lg px-3 py-2 text-sm font-medium`}
+                      onClick={closeMobileMenu}
                     >
-                      <item.icon
+                      <Icon
                         className={`${
-                          isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
-                        } mr-3 flex-shrink-0 h-5 w-5`}
+                          active ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
+                        } mr-3 h-5 w-5 flex-shrink-0`}
                       />
-                      {item.name}
+                      {name}
                     </Link>
                   );
                 })}
@@ -264,8 +277,8 @@ export default function DashboardLayout({ children }) {
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <button
               type="button"
-              className="lg:hidden -ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
-              onClick={() => setIsMobileMenuOpen(true)}
+              className="-ml-0.5 -mt-0.5 inline-flex h-12 w-12 items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden"
+              onClick={toggleMobileMenu}
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -273,10 +286,10 @@ export default function DashboardLayout({ children }) {
             <div className="flex items-center space-x-4">
               {/* Notifications */}
               <div className="relative">
-                <button className="p-2 text-gray-400 hover:text-gray-500 relative">
+                <button className="relative rounded-full p-2 text-gray-400 transition hover:text-gray-500">
                   <Bell className="h-6 w-6" />
                   {notifications.length > 0 && (
-                    <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-danger-500 text-xs font-medium text-white text-center">
+                    <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-center text-xs font-medium text-white">
                       {notifications.length > 9 ? '9+' : notifications.length}
                     </span>
                   )}
@@ -285,10 +298,7 @@ export default function DashboardLayout({ children }) {
 
               {/* Mobile profile */}
               <div className="lg:hidden">
-                <button
-                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center"
-                >
+                <button onClick={toggleProfileDropdown} className="flex items-center">
                   <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
                     <User className="h-5 w-5 text-primary-600" />
                   </div>
@@ -307,20 +317,19 @@ export default function DashboardLayout({ children }) {
       {/* Mobile bottom navigation */}
       <div className="mobile-nav lg:hidden">
         <div className="flex justify-around">
-          {mobileNavigation.map((item) => {
-            const isActive = pathname === item.href || 
-              (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            
+          {mobileNavigation.map(({ name, href, icon: Icon }) => {
+            const active = isActivePath(pathname, href);
+
             return (
               <Link
-                key={item.name}
-                href={item.href}
-                className={`flex flex-col items-center py-2 px-3 ${
-                  isActive ? 'text-primary-600' : 'text-gray-500'
+                key={name}
+                href={href}
+                className={`flex flex-col items-center px-3 py-2 ${
+                  active ? 'text-primary-600' : 'text-gray-500'
                 }`}
               >
-                <item.icon className="h-6 w-6 mb-1" />
-                <span className="text-xs">{item.name}</span>
+                <Icon className="mb-1 h-6 w-6" />
+                <span className="text-xs">{name}</span>
               </Link>
             );
           })}
