@@ -26,6 +26,113 @@ function createEmptyRecommendation() {
   };
 }
 
+function toTrimmedString(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  return String(value).trim();
+}
+
+function getPropertyNameValue(property) {
+  if (!property) return '';
+
+  const candidates = [property.name, property.general?.name, property.general?.title];
+
+  for (const candidate of candidates) {
+    const name = toTrimmedString(candidate);
+    if (name) {
+      return name;
+    }
+  }
+
+  return '';
+}
+
+function getPropertyDisplayName(property) {
+  const name = getPropertyNameValue(property);
+  return name || 'Logement sans nom';
+}
+
+function formatPropertyAddress(property) {
+  if (!property) return '';
+
+  const candidates = [
+    property.formattedAddress,
+    property.addressLabel,
+    typeof property.address === 'string' ? property.address : undefined,
+    property.address?.formatted,
+  ];
+
+  for (const candidate of candidates) {
+    const value = toTrimmedString(candidate);
+    if (value) {
+      return value;
+    }
+  }
+
+  const address = property.address;
+  if (address && typeof address === 'object') {
+    const streetLine = [toTrimmedString(address.streetNumber), toTrimmedString(address.street)]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const complement = toTrimmedString(address.complement);
+    const postalCity = [toTrimmedString(address.postalCode), toTrimmedString(address.city)]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const country = toTrimmedString(address.country);
+
+    const parts = [streetLine, complement, postalCity, country].filter(Boolean);
+    if (parts.length > 0) {
+      return parts.join(', ');
+    }
+  }
+
+  const fallbackCity = toTrimmedString(property.city ?? property.address?.city);
+  return fallbackCity;
+}
+
+function extractWifiCredentials(property) {
+  if (!property) {
+    return { name: '', password: '' };
+  }
+
+  const nameCandidates = [
+    property.general?.wifi?.name,
+    property.general?.wifiName,
+    property.wifi?.name,
+    property.wifiName,
+  ];
+
+  const passwordCandidates = [
+    property.general?.wifi?.password,
+    property.general?.wifiPassword,
+    property.wifi?.password,
+    property.wifiPassword,
+  ];
+
+  let wifiName = '';
+  for (const candidate of nameCandidates) {
+    const value = toTrimmedString(candidate);
+    if (value) {
+      wifiName = value;
+      break;
+    }
+  }
+
+  let wifiPassword = '';
+  for (const candidate of passwordCandidates) {
+    const value = toTrimmedString(candidate);
+    if (value) {
+      wifiPassword = value;
+      break;
+    }
+  }
+
+  return { name: wifiName, password: wifiPassword };
+}
+
 export default function CreateGuideModal({ open, onClose, onCreated }) {
   const [propertyName, setPropertyName] = useState('');
   const [address, setAddress] = useState('');
@@ -38,6 +145,10 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdGuide, setCreatedGuide] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [propertiesLoading, setPropertiesLoading] = useState(false);
+  const [propertiesError, setPropertiesError] = useState('');
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
 
   const dialogRef = useRef(null);
 
@@ -53,6 +164,7 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
     setIsSubmitting(false);
     setCreatedGuide(null);
     setCopied(false);
+    setSelectedPropertyId('');
   }, []);
 
   const handleClose = useCallback(() => {
@@ -164,6 +276,107 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
       )
     );
   };
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    const loadProperties = async () => {
+      setPropertiesLoading(true);
+      setPropertiesError('');
+
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+
+        if (!token) {
+          throw new Error('Impossible de charger vos logements. Veuillez vous reconnecter.');
+        }
+
+        const response = await fetch('/api/properties', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json().catch(() => {
+          throw new Error('Réponse invalide du serveur.');
+        });
+
+        if (!response.ok) {
+          throw new Error(data?.message || 'Impossible de récupérer vos logements.');
+        }
+
+        if (!isCancelled) {
+          setProperties(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setPropertiesError(error.message || 'Impossible de récupérer vos logements.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setPropertiesLoading(false);
+        }
+      }
+    };
+
+    loadProperties();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [open]);
+
+  const sortedProperties = useMemo(() => {
+    return properties
+      .filter((property) => property && property.id !== null && property.id !== undefined)
+      .slice()
+      .sort((a, b) => {
+        const nameA = getPropertyDisplayName(a);
+        const nameB = getPropertyDisplayName(b);
+        return nameA.localeCompare(nameB, 'fr', { sensitivity: 'base' });
+      });
+  }, [properties]);
+
+  const handlePropertySelect = useCallback(
+    (event) => {
+      const propertyId = event.target.value;
+      setSelectedPropertyId(propertyId);
+
+      if (!propertyId) {
+        return;
+      }
+
+      const property = properties.find((item) => String(item?.id) === propertyId);
+      if (!property) {
+        return;
+      }
+
+      const name = getPropertyNameValue(property);
+      const formattedAddress = formatPropertyAddress(property);
+      const { name: wifiNetwork, password: wifiPass } = extractWifiCredentials(property);
+
+      setPropertyName(name);
+      setAddress(formattedAddress);
+      setWifiName(wifiNetwork);
+      setWifiPassword(wifiPass);
+
+      setErrors((prev) => {
+        if (!prev || Object.keys(prev).length === 0) {
+          return prev;
+        }
+
+        const nextErrors = { ...prev };
+        delete nextErrors.propertyName;
+        delete nextErrors.address;
+        delete nextErrors.wifiName;
+        delete nextErrors.wifiPassword;
+        return nextErrors;
+      });
+    },
+    [properties]
+  );
 
   const handleCopyLink = async () => {
     if (!createdGuide) return;
@@ -375,6 +588,36 @@ export default function CreateGuideModal({ open, onClose, onCreated }) {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-5 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label htmlFor="existingProperty" className="block text-sm font-medium text-slate-700">
+                    Sélectionnez un logement existant
+                  </label>
+                  <select
+                    id="existingProperty"
+                    name="existingProperty"
+                    value={selectedPropertyId}
+                    onChange={handlePropertySelect}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={propertiesLoading}
+                  >
+                    <option value="">— Choisissez un logement —</option>
+                    {sortedProperties.map((property) => {
+                      const optionValue = String(property.id);
+                      return (
+                        <option key={optionValue} value={optionValue}>
+                          {getPropertyDisplayName(property)}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {propertiesLoading && (
+                    <p className="mt-2 text-xs text-slate-500">Chargement des logements…</p>
+                  )}
+                  {!propertiesLoading && sortedProperties.length === 0 && !propertiesError && (
+                    <p className="mt-2 text-xs text-slate-500">Aucun logement enregistré pour le moment.</p>
+                  )}
+                  {propertiesError && <p className="mt-2 text-xs text-red-500">{propertiesError}</p>}
+                </div>
                 <div>
                   <label htmlFor="propertyName" className="block text-sm font-medium text-slate-700">
                     Nom du logement
