@@ -16,7 +16,7 @@ import {
   Home,
   User
 } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
+
 import InventoryCard from '@/components/InventoryCard';
 
 export default function InventoryPage() {
@@ -127,11 +127,11 @@ export default function InventoryPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+     
         <div className="flex items-center justify-center h-64">
           <div className="loading-spinner"></div>
         </div>
-      </DashboardLayout>
+     
     );
   }
 
