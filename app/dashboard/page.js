@@ -184,14 +184,7 @@ export default function DashboardPage() {
     <>
       <div className="space-y-6">
         {/* Welcome Message */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg text-white p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-            Bienvenue sur votre dashboard 👋
-          </h1>
-          <p className="text-primary-100">
-            Gérez vos locations courte durée en toute simplicité
-          </p>
-        </div>
+     
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
