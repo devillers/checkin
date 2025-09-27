@@ -169,3 +169,26 @@ export async function DELETE(_, { params }) {
     return NextResponse.json({ message: 'Impossible de supprimer le guide.' }, { status: 500 });
   }
 }
+
+export async function GET(_, { params }) {
+  const { id } = params;
+  const objectId = parseId(id);
+
+  if (!objectId) {
+    return NextResponse.json({ message: 'Identifiant invalide.' }, { status: 400 });
+  }
+
+  try {
+    const { db } = await connectDB();
+    const doc = await db.collection('arrival_guides').findOne({ _id: objectId });
+
+    if (!doc) {
+      return NextResponse.json({ message: 'Guide introuvable.' }, { status: 404 });
+    }
+
+    return NextResponse.json(serializeGuide(doc));
+  } catch (error) {
+    console.error('GET /api/guides/[id] error:', error);
+    return NextResponse.json({ message: 'Impossible de récupérer le guide.' }, { status: 500 });
+  }
+}
