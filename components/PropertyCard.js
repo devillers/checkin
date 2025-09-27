@@ -6,18 +6,56 @@ import {
   Users,
   Bed,
   Bath,
-  Settings,
   Eye,
   Calendar,
   Edit,
-  MoreVertical,
   Star,
   TrendingUp,
   Trash2,
   Link2,
-  ImageIcon
+  ImageIcon,
+  Settings,
+  Building2
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+
+const statusStyles = {
+  active: {
+    label: 'Active',
+    className: 'bg-emerald-100 text-emerald-700'
+  },
+  inactive: {
+    label: 'Inactive',
+    className: 'bg-gray-100 text-gray-700'
+  },
+  maintenance: {
+    label: 'Maintenance',
+    className: 'bg-amber-100 text-amber-700'
+  },
+  unknown: {
+    label: 'Inconnue',
+    className: 'bg-gray-100 text-gray-700'
+  }
+};
+
+const getPhotoSources = (photo) => {
+  if (!photo) {
+    return { url: '', thumbnail: '' };
+  }
+
+  if (typeof photo === 'string') {
+    return { url: photo, thumbnail: photo };
+  }
+
+  if (typeof photo === 'object') {
+    return {
+      url: photo.url || '',
+      thumbnail: photo.thumbnailUrl || photo.url || ''
+    };
+  }
+
+  return { url: '', thumbnail: '' };
+};
 
 export default function PropertyCard({
   property,
@@ -27,76 +65,27 @@ export default function PropertyCard({
   onSettings,
   onDelete
 }) {
-  const [showDropdown, setShowDropdown] = useState(false);
+  const statusKey = property?.status?.toLowerCase();
+  const status = statusStyles[statusKey] || statusStyles.unknown;
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'bg-success-100 text-success-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'maintenance':
-        return 'bg-warning-100 text-warning-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const { url: profilePhotoUrl, thumbnail: profilePhotoThumbnail } =
+    getPhotoSources(property?.profilePhoto);
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'active':
-        return 'Active';
-      case 'inactive':
-        return 'Inactive';
-      case 'maintenance':
-        return 'Maintenance';
-      default:
-        return 'Inconnue';
-    }
-  };
-
-  const getPhotoUrl = (photo) => {
-    if (!photo) {
-      return '';
-    }
-
-    if (typeof photo === 'string') {
-      return photo;
-    }
-
-    if (typeof photo === 'object') {
-      return photo.url || '';
-    }
-
-    return '';
-  };
-
-  const getThumbnailUrl = (photo) => {
-    if (!photo) {
-      return '';
-    }
-
-    if (typeof photo === 'string') {
-      return photo;
-    }
-
-    if (typeof photo === 'object') {
-      return photo.thumbnailUrl || photo.url || '';
-    }
-
-    return '';
-  };
-
-  const profilePhotoUrl = getPhotoUrl(property.profilePhoto);
-  const profilePhotoThumbnail = getThumbnailUrl(property.profilePhoto);
-
-  const formattedAddress = useMemo(() => {
+  const locationLabel = useMemo(() => {
     if (!property) {
       return '';
     }
 
     if (typeof property.address === 'string') {
       return property.address;
+    }
+
+    if (property.address?.city) {
+      return property.address.city;
+    }
+
+    if (property.city) {
+      return property.city;
     }
 
     if (property.formattedAddress) {
@@ -107,213 +96,230 @@ export default function PropertyCard({
       return property.address.formatted;
     }
 
-    if (property.address && typeof property.address === 'object') {
-      const { streetNumber, street, complement, postalCode, city, country } = property.address;
-      return [
-        [streetNumber, street].filter(Boolean).join(' '),
-        complement,
-        [postalCode, city].filter(Boolean).join(' '),
-        country
-      ].filter(Boolean).join(', ');
-    }
-
-    return '';
+    return property.address?.city || '';
   }, [property]);
 
+  const revenue = property?.stats?.totalRevenue;
+  let formattedRevenue = '–';
+  if (typeof revenue === 'number') {
+    formattedRevenue = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0
+    }).format(revenue);
+  } else if (typeof revenue === 'string' && revenue.trim() !== '') {
+    formattedRevenue = revenue;
+  }
+
+  const rawRating = property?.stats?.averageRating;
+  let formattedRating = '–';
+  if (typeof rawRating === 'number') {
+    const value = rawRating.toFixed(1).replace(/\.0$/, '');
+    formattedRating = `${value}/5`;
+  } else if (typeof rawRating === 'string' && rawRating.trim() !== '') {
+    formattedRating = rawRating.includes('/5')
+      ? rawRating
+      : `${rawRating}/5`;
+  }
+
+  const handleView = () => {
+    if (onView) {
+      onView(property);
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(property);
+    }
+  };
+
+  const handleCalendar = () => {
+    if (onCalendar) {
+      onCalendar(property);
+    }
+  };
+
+  const handleSettings = () => {
+    if (onSettings) {
+      onSettings(property);
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(property);
+    }
+  };
+
   return (
-    <div className=" shadow-md bg-white hover-lift group relative">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4 p-2 uppercase">
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-              {property.name}
-            </h3>
-            <span className={`badge ${getStatusColor(property.status)}`}>
-              {getStatusText(property.status)}
-            </span>
-          </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="">{formattedAddress || 'Adresse non renseignée'}</span>
+    <div className="group relative flex flex-col gap-6 rounded-2xl border border-gray-200/60 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 transform">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-4">
+          {profilePhotoUrl ? (
+            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+              <Image
+                src={profilePhotoThumbnail}
+                alt={`Photo de ${property?.name ?? 'la propriété'}`}
+                fill
+                className="object-cover"
+                sizes="64px"
+                unoptimized
+              />
+            </div>
+          ) : (
+            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+              <Building2 className="h-6 w-6" aria-hidden="true" />
+            </div>
+          )}
+
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                {property?.name}
+              </h3>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}
+              >
+                <span className="size-1.5 rounded-full bg-current" />
+                {status.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <MapPin className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">
+                {locationLabel || 'Localisation non renseignée'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Dropdown Menu */}
-        <div className="relative">
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            type="button"
+            onClick={handleView}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-900"
           >
-            <MoreVertical className="h-5 w-5 text-gray-500 " />
+            <Eye className="h-4 w-4" aria-hidden="true" />
+            Voir
           </button>
-          
-          {showDropdown && (
-            <>
-              <div 
-                className="fixed inset-0 z-10 " 
-                onClick={() => setShowDropdown(false)}
-              />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                <button
-                  onClick={() => {
-                    onView(property);
-                    setShowDropdown(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Voir détails
-                </button>
-                <button
-                  onClick={() => {
-                    onEdit(property);
-                    setShowDropdown(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Modifier
-                </button>
-                <button
-                  onClick={() => {
-                    onCalendar(property);
-                    setShowDropdown(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Calendrier
-                </button>
-                <button
-                  onClick={() => {
-                    onSettings(property);
-                    setShowDropdown(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Paramètres
-                </button>
-                {onDelete && (
-                  <button
-                    onClick={() => {
-                      onDelete(property);
-                      setShowDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-danger-600 hover:bg-danger-50 flex items-center"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Supprimer
-                  </button>
-                )}
-              </div>
-            </>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-900"
+            >
+              <Edit className="h-4 w-4" aria-hidden="true" />
+              Modifier
+            </button>
+          )}
+          {onCalendar && (
+            <button
+              type="button"
+              onClick={handleCalendar}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-900"
+            >
+              <Calendar className="h-4 w-4" aria-hidden="true" />
+              Planning
+            </button>
+          )}
+          {onSettings && (
+            <button
+              type="button"
+              onClick={handleSettings}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500 dark:focus-visible:ring-offset-gray-900"
+            >
+              <Settings className="h-4 w-4" aria-hidden="true" />
+              Paramètres
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="inline-flex items-center justify-center rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 dark:text-red-400 dark:hover:bg-red-500/10 dark:focus-visible:ring-red-500 dark:focus-visible:ring-offset-gray-900"
+              aria-label={`Supprimer le logement ${property?.name ?? ''}`}
+            >
+              <Trash2 className="h-5 w-5" aria-hidden="true" />
+            </button>
           )}
         </div>
       </div>
 
-      {profilePhotoUrl && (
-        <div className="mb-4 overflow-hidden rounded-lg h-40 bg-gray-100 relative">
-          <Image
-            src={profilePhotoThumbnail}
-            alt={`Photo de ${property.name}`}
-            fill
-            className="object-cover"
-            sizes="(min-width: 1280px) 320px, (min-width: 1024px) 280px, (min-width: 768px) 45vw, 90vw"
-            unoptimized
-          />
-        </div>
-      )}
-
-      {/* Property Details */}
-      <div className="grid grid-cols-3 gap-4 mb-4 ">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <Users className="h-4 w-4 text-gray-400" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200/80 p-4 text-center dark:border-gray-800">
+          <div className="mb-2 flex items-center justify-center">
+            <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
           </div>
-          <div className="text-lg font-semibold text-gray-900">{property.maxGuests}</div>
-          <div className="text-xs text-gray-600">Invités max</div>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <Bed className="h-4 w-4 text-gray-400" />
+          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            {property?.maxGuests ?? '–'}
           </div>
-          <div className="text-lg font-semibold text-gray-900">{property.bedrooms}</div>
-          <div className="text-xs text-gray-600">Chambres</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Invités max</div>
         </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <Bath className="h-4 w-4 text-gray-400" />
+        <div className="rounded-xl border border-gray-200/80 p-4 text-center dark:border-gray-800">
+          <div className="mb-2 flex items-center justify-center">
+            <Bed className="h-4 w-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
           </div>
-          <div className="text-lg font-semibold text-gray-900">{property.bathrooms}</div>
-          <div className="text-xs text-gray-600">SdB</div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            {property?.bedrooms ?? '–'}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Chambres</div>
+        </div>
+        <div className="rounded-xl border border-gray-200/80 p-4 text-center dark:border-gray-800">
+          <div className="mb-2 flex items-center justify-center">
+            <Bath className="h-4 w-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+          </div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            {property?.bathrooms ?? '–'}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">SdB</div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 p-8">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">CA total</span>
-            <TrendingUp className="h-4 w-4 text-success-600" />
+      <div className="grid grid-cols-1 gap-4 border-t border-gray-200/80 pt-6 dark:border-gray-800 sm:grid-cols-2">
+        <div className="rounded-xl border border-gray-200/80 p-4 dark:border-gray-800">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+            <span>CA total</span>
+            <TrendingUp className="h-4 w-4 text-emerald-500" aria-hidden="true" />
           </div>
-          <div className="text-lg font-semibold text-gray-900">
-            {property.stats?.totalRevenue || 0}€
+          <div className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+            {formattedRevenue}
           </div>
         </div>
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Note moy.</span>
-            <Star className="h-4 w-4 text-warning-500" />
+        <div className="rounded-xl border border-gray-200/80 p-4 dark:border-gray-800">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+            <span>Note moy.</span>
+            <Star className="h-4 w-4 text-amber-500" aria-hidden="true" />
           </div>
-          <div className="text-lg font-semibold text-gray-900">
-            {property.stats?.averageRating ? `${property.stats.averageRating}/5` : '-'}
+          <div className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+            {formattedRating}
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="flex space-x-2 mt-4">
-        <button
-          onClick={() => onView(property)}
-          className="flex-1 btn-secondary text-sm py-2"
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          Voir
-        </button>
-        <button
-          onClick={() => onCalendar(property)}
-          className="flex-1 btn-primary text-sm py-2"
-        >
-          <Calendar className="h-4 w-4 mr-1" />
-          Planning
-        </button>
-      </div>
-
-      {(property.airbnbUrl || property.bookingUrl) && (
-        <div className="mt-4 pt-4 border-t border-gray-100 p-4">
-          <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center">
-            <Link2 className="h-4 w-4 mr-2" />
+      {(property?.airbnbUrl || property?.bookingUrl) && (
+        <div className="space-y-3 border-t border-gray-200/80 pt-6 dark:border-gray-800">
+          <div className="flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <Link2 className="mr-2 h-4 w-4" aria-hidden="true" />
             Référencement
           </div>
           <div className="flex flex-wrap gap-2">
-            {property.airbnbUrl && (
+            {property?.airbnbUrl && (
               <a
                 href={property.airbnbUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-1.5 text-sm rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+                className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20 dark:focus-visible:ring-offset-gray-900"
               >
                 Airbnb
               </a>
             )}
-            {property.bookingUrl && (
+            {property?.bookingUrl && (
               <a
                 href={property.bookingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-1.5 text-sm rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+                className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20 dark:focus-visible:ring-offset-gray-900"
               >
                 Booking
               </a>
@@ -322,10 +328,10 @@ export default function PropertyCard({
         </div>
       )}
 
-      {property.descriptionPhotos?.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-100 p-4">
-          <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center">
-            <ImageIcon className="h-4 w-4 mr-2" />
+      {property?.descriptionPhotos?.length > 0 && (
+        <div className="space-y-3 border-t border-gray-200/80 pt-6 dark:border-gray-800">
+          <div className="flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <ImageIcon className="mr-2 h-4 w-4" aria-hidden="true" />
             Photos descriptives
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -342,10 +348,13 @@ export default function PropertyCard({
               const key = photoData.publicId || `${photoData.url}-${index}`;
 
               return (
-                <div key={key} className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+                <div
+                  key={key}
+                  className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+                >
                   <Image
                     src={photoData.thumbnailUrl || photoData.url}
-                    alt={`Photo ${index + 1} de ${property.name}`}
+                    alt={`Photo ${index + 1} de ${property?.name ?? 'la propriété'}`}
                     fill
                     className="object-cover"
                     sizes="96px"
@@ -358,10 +367,9 @@ export default function PropertyCard({
         </div>
       )}
 
-      {/* Description */}
-      {property.description && (
-        <div className="mt-3 pt-3 border-t border-gray-100 p-2 ">
-          <p className="text-xs text-gray-600 line-clamp-2 text-justify">
+      {property?.description && (
+        <div className="space-y-3 border-t border-gray-200/80 pt-6 dark:border-gray-800">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             {property.description}
           </p>
         </div>
