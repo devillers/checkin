@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import DashboardLayout from '@/components/DashboardLayout';
+
 
 const STATUS_CONFIG = {
   pending: {
@@ -146,7 +146,7 @@ export default function InventoryDetailsPage() {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <DashboardLayout>
+  
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -365,6 +365,6 @@ export default function InventoryDetailsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+   
   );
 }
