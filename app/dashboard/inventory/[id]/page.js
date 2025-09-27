@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft,
@@ -333,29 +334,55 @@ export default function InventoryDetailsPage() {
 
                     {room.items && room.items.length > 0 && (
                       <div className="mt-4 space-y-3">
-                        {room.items.map((item) => (
-                          <div
-                            key={item.id}
-                            className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700"
-                          >
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                              <p className="font-medium text-gray-900">
-                                {item.name || 'Élément sans nom'}
-                              </p>
-                              <span className="text-gray-600">
-                                Condition : {item.condition ?? '—'}/5
-                              </span>
+                        {room.items.map((item) => {
+                          const firstPhoto = Array.isArray(item.photos)
+                            ? item.photos[0]
+                            : null;
+                          const photoUrl =
+                            typeof firstPhoto === 'string'
+                              ? firstPhoto
+                              : firstPhoto?.thumbnailUrl || firstPhoto?.url || '';
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700"
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                {photoUrl && (
+                                  <div className="sm:w-32 sm:flex-shrink-0">
+                                    <Image
+                                      src={photoUrl}
+                                      alt={`Photo de ${item.name || "l'élément"}`}
+                                      width={160}
+                                      height={120}
+                                      unoptimized
+                                      className="h-24 w-full rounded-md object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <div className="flex-1 space-y-3">
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <p className="font-medium text-gray-900">
+                                      {item.name || 'Élément sans nom'}
+                                    </p>
+                                    <span className="text-gray-600">
+                                      Condition : {item.condition ?? '—'}/5
+                                    </span>
+                                  </div>
+                                  {item.description && (
+                                    <p className="text-gray-600">{item.description}</p>
+                                  )}
+                                  {item.comments && (
+                                    <p className="text-gray-500 italic">
+                                      Commentaires : {item.comments}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            {item.description && (
-                              <p className="mt-2 text-gray-600">{item.description}</p>
-                            )}
-                            {item.comments && (
-                              <p className="mt-2 text-gray-500 italic">
-                                Commentaires : {item.comments}
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
