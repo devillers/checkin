@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -28,6 +29,7 @@ export default function NewInventoryPage() {
   const [guests, setGuests] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [draggingItemId, setDraggingItemId] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -140,7 +142,7 @@ export default function NewInventoryPage() {
     setFormData(prev => ({
       ...prev,
       rooms: prev.rooms.map(room =>
-        room.id === roomId 
+        room.id === roomId
           ? {
               ...room,
               items: room.items.map(item =>
@@ -150,6 +152,28 @@ export default function NewInventoryPage() {
           : room
       )
     }));
+  };
+
+  const handleItemPhotoUpload = (roomId, itemId, files) => {
+    const file = files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result;
+
+      if (typeof result === 'string') {
+        updateRoomItem(roomId, itemId, 'photos', [result]);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeItemPhoto = (roomId, itemId) => {
+    updateRoomItem(roomId, itemId, 'photos', []);
   };
 
   const validateForm = () => {
@@ -482,7 +506,7 @@ export default function NewInventoryPage() {
                         <div className="space-y-3">
                           {room.items.map((item, itemIndex) => (
                             <div key={item.id} className="bg-gray-50 rounded-lg p-4">
-                              <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-start justify-between mb-3">
                                 <span className="text-sm font-medium text-gray-700">
                                   Élément {itemIndex + 1}
                                 </span>
@@ -495,24 +519,142 @@ export default function NewInventoryPage() {
                                   <Minus className="h-4 w-4" />
                                 </button>
                               </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <input
-                                  type="text"
-                                  className="form-input text-sm"
-                                  placeholder="Nom de l'élément"
-                                  value={item.name}
-                                  onChange={(e) => updateRoomItem(room.id, item.id, 'name', e.target.value)}
-                                  disabled={isLoading}
-                                />
-                                <input
-                                  type="text"
-                                  className="form-input text-sm"
-                                  placeholder="Description (optionnel)"
-                                  value={item.description}
-                                  onChange={(e) => updateRoomItem(room.id, item.id, 'description', e.target.value)}
-                                  disabled={isLoading}
-                                />
+
+                              <div className="flex flex-col md:flex-row md:space-x-4">
+                                <div className="md:w-48 mb-4 md:mb-0">
+                                  <label className="form-label block">Photo</label>
+                                  <div
+                                    className={`relative border-2 border-dashed rounded-lg p-4 text-center text-xs transition-colors ${
+                                      draggingItemId === `${room.id}-${item.id}`
+                                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                        : 'border-gray-200 bg-white text-gray-600'
+                                    }`}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDragEnter={() =>
+                                      setDraggingItemId(`${room.id}-${item.id}`)
+                                    }
+                                    onDragLeave={() => setDraggingItemId(null)}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      setDraggingItemId(null);
+                                      handleItemPhotoUpload(
+                                        room.id,
+                                        item.id,
+                                        e.dataTransfer.files
+                                      );
+                                    }}
+                                  >
+                                    {item.photos?.[0] ? (
+                                      <div className="space-y-2">
+                                        <Image
+                                          src={item.photos[0]}
+                                          alt={`Photo de ${item.name || 'l\'élément'}`}
+                                          width={192}
+                                          height={128}
+                                          unoptimized
+                                          className="w-full h-32 object-cover rounded-md"
+                                        />
+                                        <button
+                                          type="button"
+                                          className="text-[11px] text-danger-600 hover:text-danger-700"
+                                          onClick={() => removeItemPhoto(room.id, item.id)}
+                                          disabled={isLoading}
+                                        >
+                                          Supprimer la photo
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        <Camera className="mx-auto h-6 w-6 text-gray-400" />
+                                        <p className="text-[11px] text-gray-500">
+                                          Glissez-déposez ou cliquez pour ajouter
+                                        </p>
+                                      </div>
+                                    )}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="absolute inset-0 opacity-0 cursor-pointer"
+                                      onChange={(e) =>
+                                        handleItemPhotoUpload(
+                                          room.id,
+                                          item.id,
+                                          e.target.files
+                                        )
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex-1 space-y-3">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <input
+                                      type="text"
+                                      className="form-input text-sm"
+                                      placeholder="Nom de l'élément"
+                                      value={item.name}
+                                      onChange={(e) =>
+                                        updateRoomItem(
+                                          room.id,
+                                          item.id,
+                                          'name',
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                    <input
+                                      type="text"
+                                      className="form-input text-sm"
+                                      placeholder="Description (optionnel)"
+                                      value={item.description}
+                                      onChange={(e) =>
+                                        updateRoomItem(
+                                          room.id,
+                                          item.id,
+                                          'description',
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={5}
+                                      className="form-input text-sm"
+                                      placeholder="Condition (1 à 5)"
+                                      value={item.condition ?? 5}
+                                      onChange={(e) =>
+                                        updateRoomItem(
+                                          room.id,
+                                          item.id,
+                                          'condition',
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                    <textarea
+                                      className="form-input text-sm"
+                                      rows={2}
+                                      placeholder="Commentaires"
+                                      value={item.comments}
+                                      onChange={(e) =>
+                                        updateRoomItem(
+                                          room.id,
+                                          item.id,
+                                          'comments',
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           ))}

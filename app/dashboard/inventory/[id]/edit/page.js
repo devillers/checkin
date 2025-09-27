@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft,
@@ -10,7 +11,8 @@ import {
   Clock,
   Plus,
   Minus,
-  CheckCircle
+  CheckCircle,
+  Camera
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -64,6 +66,7 @@ export default function EditInventoryPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitMessage, setSubmitMessage] = useState('');
+  const [draggingItemId, setDraggingItemId] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('auth-token');
@@ -228,6 +231,28 @@ export default function EditInventoryPage() {
           : room
       )
     }));
+  };
+
+  const handleItemPhotoUpload = (roomId, itemId, files) => {
+    const file = files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result;
+
+      if (typeof result === 'string') {
+        updateRoomItem(roomId, itemId, 'photos', [result]);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeItemPhoto = (roomId, itemId) => {
+    updateRoomItem(roomId, itemId, 'photos', []);
   };
 
   const validateForm = () => {
@@ -599,87 +624,157 @@ export default function EditInventoryPage() {
                             {room.items.map((item) => (
                               <div
                                 key={item.id}
-                                className="bg-gray-50 rounded-lg p-4 space-y-3"
+                                className="bg-gray-50 rounded-lg p-4"
                               >
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="form-label">Nom</label>
-                                    <input
-                                      type="text"
-                                      className="form-input"
-                                      value={item.name}
-                                      onChange={(e) =>
-                                        updateRoomItem(
+                                <div className="flex flex-col md:flex-row md:space-x-4">
+                                  <div className="md:w-48 mb-4 md:mb-0">
+                                    <label className="form-label block">Photo</label>
+                                    <div
+                                      className={`relative border-2 border-dashed rounded-lg p-4 text-center text-sm transition-colors ${
+                                        draggingItemId === `${room.id}-${item.id}`
+                                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                          : 'border-gray-200 bg-white text-gray-600'
+                                      }`}
+                                      onDragOver={(e) => e.preventDefault()}
+                                      onDragEnter={() =>
+                                        setDraggingItemId(`${room.id}-${item.id}`)
+                                      }
+                                      onDragLeave={() => setDraggingItemId(null)}
+                                      onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDraggingItemId(null);
+                                        handleItemPhotoUpload(
                                           room.id,
                                           item.id,
-                                          'name',
-                                          e.target.value
-                                        )
-                                      }
-                                      disabled={isSubmitting}
-                                    />
+                                          e.dataTransfer.files
+                                        );
+                                      }}
+                                    >
+                                      {item.photos?.[0] ? (
+                                        <div className="space-y-2">
+                                          <Image
+                                            src={item.photos[0]}
+                                            alt={`Photo de ${item.name || 'l\'élément'}`}
+                                            width={192}
+                                            height={128}
+                                            unoptimized
+                                            className="w-full h-32 object-cover rounded-md"
+                                          />
+                                          <button
+                                            type="button"
+                                            className="text-xs text-danger-600 hover:text-danger-700"
+                                            onClick={() => removeItemPhoto(room.id, item.id)}
+                                            disabled={isSubmitting}
+                                          >
+                                            Supprimer la photo
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          <Camera className="mx-auto h-6 w-6 text-gray-400" />
+                                          <p className="text-xs text-gray-500">
+                                            Glissez-déposez ou cliquez pour ajouter
+                                          </p>
+                                        </div>
+                                      )}
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        onChange={(e) =>
+                                          handleItemPhotoUpload(
+                                            room.id,
+                                            item.id,
+                                            e.target.files
+                                          )
+                                        }
+                                        disabled={isSubmitting}
+                                      />
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label className="form-label">
-                                      Condition (1 à 5)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      max={5}
-                                      className="form-input"
-                                      value={item.condition ?? 5}
-                                      onChange={(e) =>
-                                        updateRoomItem(
-                                          room.id,
-                                          item.id,
-                                          'condition',
-                                          Number(e.target.value)
-                                        )
-                                      }
-                                      disabled={isSubmitting}
-                                    />
-                                  </div>
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="form-label">
-                                      Description
-                                    </label>
-                                    <textarea
-                                      className="form-input"
-                                      rows={2}
-                                      value={item.description}
-                                      onChange={(e) =>
-                                        updateRoomItem(
-                                          room.id,
-                                          item.id,
-                                          'description',
-                                          e.target.value
-                                        )
-                                      }
-                                      disabled={isSubmitting}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="form-label">
-                                      Commentaires
-                                    </label>
-                                    <textarea
-                                      className="form-input"
-                                      rows={2}
-                                      value={item.comments}
-                                      onChange={(e) =>
-                                        updateRoomItem(
-                                          room.id,
-                                          item.id,
-                                          'comments',
-                                          e.target.value
-                                        )
-                                      }
-                                      disabled={isSubmitting}
-                                    />
+                                  <div className="flex-1 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="form-label">Nom</label>
+                                        <input
+                                          type="text"
+                                          className="form-input"
+                                          value={item.name}
+                                          onChange={(e) =>
+                                            updateRoomItem(
+                                              room.id,
+                                              item.id,
+                                              'name',
+                                              e.target.value
+                                            )
+                                          }
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="form-label">
+                                          Condition (1 à 5)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          max={5}
+                                          className="form-input"
+                                          value={item.condition ?? 5}
+                                          onChange={(e) =>
+                                            updateRoomItem(
+                                              room.id,
+                                              item.id,
+                                              'condition',
+                                              Number(e.target.value)
+                                            )
+                                          }
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="form-label">
+                                          Description
+                                        </label>
+                                        <textarea
+                                          className="form-input"
+                                          rows={2}
+                                          value={item.description}
+                                          onChange={(e) =>
+                                            updateRoomItem(
+                                              room.id,
+                                              item.id,
+                                              'description',
+                                              e.target.value
+                                            )
+                                          }
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="form-label">
+                                          Commentaires
+                                        </label>
+                                        <textarea
+                                          className="form-input"
+                                          rows={2}
+                                          value={item.comments}
+                                          onChange={(e) =>
+                                            updateRoomItem(
+                                              room.id,
+                                              item.id,
+                                              'comments',
+                                              e.target.value
+                                            )
+                                          }
+                                          disabled={isSubmitting}
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
