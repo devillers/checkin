@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { name: 'Propriétés', href: '/dashboard/properties', icon: Building2 },
   { name: 'Inventaires', href: '/dashboard/inventory', icon: FileText },
   { name: 'Guests', href: '/dashboard/guests', icon: Users },
-  { name: 'Cautions', href: '/dashboard/deposits', icon: CreditCard },
+  { name: 'Deposits', href: '/dashboard/deposits', icon: CreditCard },
   { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
   { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
   { name: 'Paramètres', href: '/dashboard/settings', icon: Settings, showOnMobile: false }
