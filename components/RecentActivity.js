@@ -49,7 +49,7 @@ export default function RecentActivity({ activities = [] }) {
   }
 
   return (
-    <div className="card">
+    <div className="card gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
       <h2 className="text-xl font-semibold mb-4 flex items-center">
         <Clock className="h-5 w-5 mr-2 text-primary-600" />
         Activité récente
@@ -83,7 +83,7 @@ export default function RecentActivity({ activities = [] }) {
 
       {activities.length > 5 && (
         <div className="mt-4 pt-4 border-t border-gray-200">
-          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button className="mt-4 sm:mt-0 flex items-center text-sm text-center rounded-2xl border border-slate-200 bg-white px-6 py-3 shadow-sm">
             Voir toute l'activité
           </button>
         </div>

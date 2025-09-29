@@ -183,7 +183,7 @@ export default function PropertyRow({
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <button onClick={handleView} className="btn-secondary text-sm py-2 px-4">
+            <button onClick={handleView} className="mt-4 sm:mt-0 flex items-center text-sm text-center rounded-2xl border border-slate-200 bg-white px-6 py-3 shadow-sm">
               <Eye className="h-4 w-4 mr-2" />
               Voir
             </button>

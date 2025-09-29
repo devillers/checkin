@@ -44,7 +44,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     properties: 0,
     inventories: 0,
-    activeGuests: 0,
+    activeGuests: 5,
     pendingDeposits: 0,
     totalRevenue: 0,
     occupancyRate: 0
@@ -219,7 +219,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="card">
+        <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Plus className="h-5 w-5 mr-2 text-primary-600" />
             Actions rapides
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                   key={action.id}
                   onClick={() => handleQuickAction(action.id)}
                   className={cn(
-                    'p-4 rounded-lg border-2 border-dashed transition-all text-left group',
+                    'p-4 rounded-2xl  transition-all text-left group shadow-md',
                     buttonColorClasses
                   )}
                 >
@@ -244,8 +244,8 @@ export default function DashboardPage() {
                       iconColorClass
                     )}
                   />
-                  <h3 className="font-medium text-gray-900">{action.title}</h3>
-                  <p className="text-sm text-gray-600">{action.description}</p>
+                  <h3 className=" text-gray-900">{action.title}</h3>
+                  <p className=" uppercase text-[10px] text-gray-600">{action.description}</p>
                 </button>
               );
             })}
@@ -254,7 +254,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upcoming Check-ins */}
-          <div className="card">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <Calendar className="h-5 w-5 mr-2 text-primary-600" />
               Arrivées prochaines
@@ -293,14 +293,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Pending Tasks */}
-          <div className="card">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <AlertCircle className="h-5 w-5 mr-2 text-warning-600" />
               Tâches en attente
             </h2>
             
             {pendingTasks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 shadow-md">
                 <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Toutes les tâches sont à jour !</p>
               </div>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
                     task.priority === 'high' ? 'border-danger-500' : 
                     task.priority === 'medium' ? 'border-warning-500' : 'border-primary-500'
                   }`}>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 ">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                         task.priority === 'high' ? 'bg-danger-100' : 
                         task.priority === 'medium' ? 'bg-warning-100' : 'bg-primary-100'
@@ -323,12 +323,12 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{task.title}</p>
-                        <p className="text-sm text-gray-600">{task.description}</p>
+                        <p className="text-[10px] uppercase text-gray-600">{task.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-gray-500">{task.due}</span>
-                      <button className="btn-secondary text-xs">
+                      <button className="btn-f text-xs">
                         Traiter
                       </button>
                     </div>

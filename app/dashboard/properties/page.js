@@ -151,7 +151,8 @@ export default function DashboardPropertiesPage() {
               Centralisez vos logements, leurs liens de réservation et leurs photos.
             </p>
           </div>
-          <button onClick={handleCreateProperty} className="btn-primary inline-flex items-center">
+          <button onClick={handleCreateProperty}   className="mt-4 sm:mt-0 flex items-center text-sm text-center rounded-2xl border border-slate-200 bg-white px-6 py-3 shadow-sm">
+            
             <Plus className="h-5 w-5 mr-2" />
             Ajouter une propriété
           </button>
@@ -164,7 +165,7 @@ export default function DashboardPropertiesPage() {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card text-center">
+          <div className="card gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-primary-100 rounded-full flex items-center justify-center">
               <Home className="h-6 w-6 text-primary-600" />
             </div>
@@ -172,7 +173,7 @@ export default function DashboardPropertiesPage() {
             <div className="text-sm text-gray-600">Total propriétés</div>
           </div>
 
-          <div className="card text-center">
+       <div className="card gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-success-100 rounded-full flex items-center justify-center">
               <BarChart3 className="h-6 w-6 text-success-600" />
             </div>
@@ -180,7 +181,7 @@ export default function DashboardPropertiesPage() {
             <div className="text-sm text-gray-600">Actives</div>
           </div>
 
-          <div className="card text-center">
+          <div className="card gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-warning-100 rounded-full flex items-center justify-center">
               <Trash2 className="h-6 w-6 text-warning-600" />
             </div>
@@ -188,7 +189,7 @@ export default function DashboardPropertiesPage() {
             <div className="text-sm text-gray-600">Inactives</div>
           </div>
 
-          <div className="card text-center">
+           <div className="card gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md text-center">
             <div className="w-12 h-12 mx-auto mb-3 bg-primary-100 rounded-full flex items-center justify-center">
               <Users className="h-6 w-6 text-primary-600" />
             </div>
@@ -202,10 +203,10 @@ export default function DashboardPropertiesPage() {
             <button
               key={item.key}
               onClick={() => setFilter(item.key)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-2xl text-sm font-medium transition-colors ${
                 filter === item.key
-                  ? 'bg-white text-primary-700 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-gray-600 hover:text-pink-500'
               }`}
             >
               {item.label}

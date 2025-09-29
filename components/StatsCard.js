@@ -16,7 +16,7 @@ export default function StatsCard({
   };
 
   return (
-    <div className="card hover-lift">
+    <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
       <div className="flex items-center">
         <div className="flex-shrink-0">
           <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
@@ -24,7 +24,7 @@ export default function StatsCard({
           </div>
         </div>
         <div className="ml-4 flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-[12px] uppercase font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
           {trend && (
             <div className="flex items-center mt-1">

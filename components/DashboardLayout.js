@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { name: 'Guests', href: '/dashboard/guests', icon: Users },
   { name: 'Deposits', href: '/dashboard/deposits', icon: CreditCard },
   { name: 'Calendrier', href: '/dashboard/calendrier', icon: Calendar },
-  { name: "Guide d'arrivée", href: '/dashboard/guidebook', icon: BookOpen },
+  { name: "Guides", href: '/dashboard/guidebook', icon: BookOpen },
   { name: 'Paramètres', href: '/dashboard/settings', icon: Settings, showOnMobile: false }
 ];
 
@@ -316,7 +316,7 @@ export default function DashboardLayout({ children }) {
 
       {/* Mobile bottom navigation */}
       <div className="mobile-nav lg:hidden">
-        <div className="flex justify-around">
+        <div className="flex justify-between">
           {mobileNavigation.map(({ name, href, icon: Icon }) => {
             const active = isActivePath(pathname, href);
 
@@ -324,12 +324,12 @@ export default function DashboardLayout({ children }) {
               <Link
                 key={name}
                 href={href}
-                className={`flex flex-col items-center px-3 py-2 ${
-                  active ? 'text-primary-600' : 'text-gray-500'
+                className={`flex flex-col items-center  px-3 py-2 ${
+                  active ? 'text-pink-600' : 'text-gray-500'
                 }`}
               >
                 <Icon className="mb-1 h-6 w-6" />
-                <span className="text-xs">{name}</span>
+                <span className="text-[10px] uppercase">{name}</span>
               </Link>
             );
           })}

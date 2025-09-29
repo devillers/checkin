@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import {  Loader2 } from 'lucide-react';
 import { 
   FileText, 
   Plus, 
@@ -128,9 +129,15 @@ export default function InventoryPage() {
   if (isLoading) {
     return (
      
-        <div className="flex items-center justify-center h-64">
-          <div className="loading-spinner"></div>
-        </div>
+        // <div className="flex items-center justify-center h-64">
+        //   <div className="loading-spinner"></div>
+        // </div>
+          <div className="mt-20 flex justify-center">
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <span className="text-sm text-slate-600">Chargement des guides…</span>
+            </div>
+          </div>
      
     );
   }
@@ -150,7 +157,7 @@ export default function InventoryPage() {
           </div>
           <button
             onClick={handleCreateInventory}
-            className="mt-4 sm:mt-0 btn-primary flex items-center"
+            className="mt-4 sm:mt-0 flex items-center text-sm text-center rounded-2xl border border-slate-200 bg-white px-6 py-3 shadow-sm"
           >
             <Plus className="h-5 w-5 mr-2" />
             Nouvel inventaire
@@ -165,41 +172,41 @@ export default function InventoryPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card text-center">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
             <div className="w-12 h-12 mx-auto mb-3 bg-primary-100 rounded-full flex items-center justify-center">
               <FileText className="h-6 w-6 text-primary-600" />
             </div>
             <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total inventaires</div>
+            <div className="text-xs uppercase py-2 text-gray-600">Total inventaires</div>
           </div>
           
-          <div className="card text-center">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
             <div className="w-12 h-12 mx-auto mb-3 bg-warning-100 rounded-full flex items-center justify-center">
               <Calendar className="h-6 w-6 text-warning-600" />
             </div>
             <div className="text-2xl font-bold text-gray-900">{stats.pending}</div>
-            <div className="text-sm text-gray-600">En attente</div>
+            <div className="text-xs uppercase py-2 text-gray-600">En attente</div>
           </div>
           
-          <div className="card text-center">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
             <div className="w-12 h-12 mx-auto mb-3 bg-success-100 rounded-full flex items-center justify-center">
               <FileText className="h-6 w-6 text-success-600" />
             </div>
             <div className="text-2xl font-bold text-gray-900">{stats.completed}</div>
-            <div className="text-sm text-gray-600">Terminés</div>
+            <div className="text-xs uppercase py-2 text-gray-600">Terminés</div>
           </div>
           
-          <div className="card text-center">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
             <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
               <Archive className="h-6 w-6 text-gray-600" />
             </div>
             <div className="text-2xl font-bold text-gray-900">{stats.archived}</div>
-            <div className="text-sm text-gray-600">Archivés</div>
+            <div className="text-xs uppercase py-2 text-gray-600">Archivés</div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="card">
+        <div className="card gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-md">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
@@ -255,7 +262,7 @@ export default function InventoryPage() {
 
         {/* Inventories Grid */}
         {filteredInventories.length === 0 ? (
-          <div className="card text-center py-12">
+          <div className="card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
             <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {inventories.length === 0 
@@ -272,7 +279,7 @@ export default function InventoryPage() {
             {inventories.length === 0 && (
               <button
                 onClick={handleCreateInventory}
-                className="btn-primary inline-flex items-center"
+                className="btn-primary inline-flex items-center card text-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Créer mon premier inventaire
@@ -280,7 +287,7 @@ export default function InventoryPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-2">
             {filteredInventories.map((inventory) => (
               <InventoryCard
                 key={inventory.id}
