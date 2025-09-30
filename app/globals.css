@@ -248,7 +248,13 @@ body {
   outline-offset: 2px;
 }
 
-
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
